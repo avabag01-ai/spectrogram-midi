@@ -8,7 +8,7 @@ import pandas as pd
 import tempfile
 from aegis_engine import AegisEngine
 from aegis_engine_core.visualizers import render_vector_piano_roll
-from aegis_engine_core.synthesizer import synthesize_midi, get_synthesizer
+from aegis_engine_core.synthesizer import synthesize_midi, get_synthesizer, synthesize_midi_adsr, GUITAR_ADSR_PRESETS
 
 # --- 🏛️ Aegis Tuner Pro: Ultra-Minimal Real-time Edition ---
 st.set_page_config(page_title="Aegis Tuner Pro", layout="wide")
@@ -257,6 +257,103 @@ if active_file_path:
                             )
                         else:
                             st.error("❌ 역변환 분석 실패")
+
+                # === 🎛️ ADSR 소프트 신스 섹션 ===
+                st.markdown("---")
+                st.subheader("🎛️ ADSR Soft Synth")
+                st.caption("직접 파형/엔벨로프를 조절해서 원본 음색에 가깝게 합성")
+
+                adsr_col1, adsr_col2 = st.columns(2)
+                with adsr_col1:
+                    adsr_preset = st.selectbox("🎸 ADSR 기타 프리셋",
+                        list(GUITAR_ADSR_PRESETS.keys()), index=2)
+                    use_envelope_match = st.checkbox("🔍 원본 엔벨로프 자동 분석", value=False,
+                        help="원본 음원의 ADSR 특성을 분석해서 자동 적용")
+
+                with adsr_col2:
+                    preset_info = GUITAR_ADSR_PRESETS[adsr_preset]
+                    st.caption(f"Attack: {preset_info['attack_ms']}ms | Decay: {preset_info['decay_ms']}ms | "
+                              f"Sustain: {preset_info['sustain_level']} | Release: {preset_info['release_ms']}ms | "
+                              f"Wave: {preset_info['waveform']}")
+
+                if st.button("🎹 ADSR 합성", use_container_width=True):
+                    with st.spinner("🎛️ ADSR 소프트 신스 합성 중..."):
+                        adsr_overrides = {}
+                        if use_envelope_match and 'active_file_path' in st.session_state:
+                            try:
+                                from aegis_engine_core.synthesizer import get_adsr_synthesizer
+                                adsr_synth = get_adsr_synthesizer()
+                                y_orig, _ = librosa.load(st.session_state.active_file_path, sr=44100, duration=10)
+                                env_params = adsr_synth.analyze_envelope(y_orig, sr=44100)
+                                adsr_overrides = env_params
+                                st.info(f"🔍 분석 결과: A={env_params['attack_ms']:.0f}ms D={env_params['decay_ms']:.0f}ms "
+                                       f"S={env_params['sustain_level']:.2f} R={env_params['release_ms']:.0f}ms")
+                            except Exception as e:
+                                st.warning(f"엔벨로프 분석 실패: {e}")
+
+                        adsr_wav = synthesize_midi_adsr(midi_data, preset=adsr_preset, **adsr_overrides)
+                        if adsr_wav:
+                            st.audio(adsr_wav, format="audio/wav")
+                            st.success("✅ ADSR 합성 완료!")
+                        else:
+                            st.error("❌ ADSR 합성 실패")
+
+                # === 🔄 이펙트 학습 루프 섹션 ===
+                st.markdown("---")
+                st.subheader("🧠 Effect Learning Loop")
+                st.caption("MIDI → 이펙트 음원 → 재분석 → 파라미터 자동 최적화 반복")
+
+                loop_col1, loop_col2 = st.columns(2)
+                with loop_col1:
+                    from aegis_engine_core.effect_learning_loop import EFFECT_PRESETS
+                    effect_preset = st.selectbox("🎸 이펙트 프리셋",
+                        list(EFFECT_PRESETS.keys()), index=0)
+                with loop_col2:
+                    max_iters = st.slider("🔄 최대 반복 횟수", 1, 10, 5)
+
+                if st.button("🧠 학습 루프 시작", use_container_width=True):
+                    with st.spinner("🧠 학습 루프 실행 중... (시간이 좀 걸립니다)"):
+                        from aegis_engine_core.effect_learning_loop import learning_loop, EFFECT_PRESETS
+                        loop_result = learning_loop(
+                            midi_data=midi_data,
+                            engine=engine,
+                            effects_config=EFFECT_PRESETS[effect_preset],
+                            max_iterations=max_iters,
+                            target_accuracy=0.95
+                        )
+
+                        if loop_result:
+                            st.success(f"✅ 학습 완료! Overall: {loop_result['best_accuracy']['overall']:.1%}")
+
+                            # 결과 메트릭
+                            lm1, lm2, lm3, lm4 = st.columns(4)
+                            lm1.metric("노트 일치", f"{loop_result['best_accuracy']['note_accuracy']:.1%}")
+                            lm2.metric("피치 정확도", f"{loop_result['best_accuracy']['pitch_accuracy']:.1%}")
+                            lm3.metric("타이밍 정확도", f"{loop_result['best_accuracy']['timing_accuracy']:.1%}")
+                            lm4.metric("종합", f"{loop_result['best_accuracy']['overall']:.1%}")
+
+                            # 최적 파라미터 표시
+                            bp = loop_result['best_params']
+                            st.info(f"🎯 최적 파라미터: Conf={bp['confidence_threshold']:.2f} | "
+                                   f"MinDur={bp['min_note_duration_ms']}ms | Sustain={bp['sustain_ms']}ms")
+
+                            # 학습 히스토리 차트
+                            if loop_result['history']:
+                                hist_df = pd.DataFrame([
+                                    {'iteration': h['iteration'],
+                                     'overall': h['accuracy']['overall']}
+                                    for h in loop_result['history']
+                                ])
+                                st.line_chart(hist_df.set_index('iteration'))
+
+                            # 최적값 적용 버튼
+                            if st.button("📥 최적 파라미터 적용", use_container_width=True):
+                                st.session_state.auto_conf = bp['confidence_threshold']
+                                st.session_state.auto_sustain = bp['sustain_ms']
+                                st.session_state.auto_mindur = bp['min_note_duration_ms']
+                                st.rerun()
+                        else:
+                            st.error("❌ 학습 루프 실패")
 
     # Run the ultra-stable loop
     tuner_core(st.session_state.raw_data_cache)
