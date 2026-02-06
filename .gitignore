@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Audio/MIDI files (too large for git)
+*.mid
+*.mp3
+*.wav
+*.mp4
+
+# Temp & System
+temp/
+.DS_Store
+.streamlit/
+
+# Node
+node_modules/
+package-lock.json
+
+# Logs
+*.log
+*.txt
+!requirements.txt
+
+# SoundFont (placeholder files)
+*.sf2
+
+# IDE
+.vscode/
+.idea/
+
+# Test outputs
+stem_lab_output/
+stem_test_output/
+stem_test_output_v2/
+downloads/
+benchmark_messy_input.wav

@@ -1,0 +1,11 @@
+librosa
+numpy
+matplotlib
+streamlit
+mido
+pretty_midi
+scipy
+soundfile
+demucs
+torch
+torchaudio

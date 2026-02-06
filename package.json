@@ -1,0 +1,16 @@
+{
+  "name": "aegis_engine",
+  "version": "1.0.0",
+  "description": "**The Advanced Audio-to-MIDI Extraction Engine for Guitarists.**",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^40.1.0"
+  }
+}
