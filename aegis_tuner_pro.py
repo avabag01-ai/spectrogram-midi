@@ -355,6 +355,69 @@ if active_file_path:
                         else:
                             st.error("❌ 학습 루프 실패")
 
+                # === 🎯 노트별 개별 최적화 섹션 ===
+                st.markdown("---")
+                st.subheader("🎯 Per-Note Optimizer")
+                st.caption("각 노트마다 원본 오디오와 비교하여 개별 ADSR 파라미터 최적화 (멀티프로세싱)")
+
+                pno_col1, pno_col2 = st.columns(2)
+                with pno_col1:
+                    pno_quick = st.checkbox("⚡ Quick Mode (빠른 분석)", value=True,
+                        help="빠른 모드: 엔벨로프 분석만 / 전체 모드: 27가지 조합 그리드 서치")
+                with pno_col2:
+                    pno_parallel = st.checkbox("🚀 멀티프로세싱 (병렬 처리)", value=True,
+                        help="CPU 코어를 활용한 병렬 처리")
+
+                if st.button("🎯 노트별 최적화 시작", use_container_width=True):
+                    with st.spinner("🎯 노트별 최적화 중..."):
+                        from aegis_engine_core.per_note_optimizer import (
+                            optimize_all_notes, optimize_all_notes_parallel,
+                            synthesize_with_per_note_params, generate_optimization_report
+                        )
+
+                        # 원본 오디오 로드
+                        y_orig, _ = librosa.load(st.session_state.active_file_path, sr=44100, duration=30)
+
+                        # 최적화 실행
+                        if pno_parallel and len(events) >= 10:
+                            opt_events = optimize_all_notes_parallel(
+                                events, y_orig, sr=44100, hop_length=512, quick_mode=pno_quick
+                            )
+                        else:
+                            opt_events = optimize_all_notes(
+                                events, y_orig, sr=44100, hop_length=512, quick_mode=pno_quick
+                            )
+
+                        if opt_events:
+                            # 리포트 생성
+                            report = generate_optimization_report(opt_events)
+
+                            st.success(f"✅ {report['total_notes']}개 노트 최적화 완료!")
+
+                            # 메트릭
+                            rm1, rm2, rm3 = st.columns(3)
+                            rm1.metric("평균 유사도", f"{report['avg_similarity']:.1%}")
+                            rm2.metric("최저 유사도", f"{report['min_similarity']:.1%}")
+                            rm3.metric("최고 유사도", f"{report['max_similarity']:.1%}")
+
+                            # ADSR 평균값
+                            st.info(f"📊 평균 ADSR: A={report['avg_attack_ms']}ms | "
+                                   f"D={report['avg_decay_ms']}ms | "
+                                   f"S={report['avg_sustain_level']} | "
+                                   f"R={report['avg_release_ms']}ms")
+
+                            # 파형 분포
+                            if report['waveform_distribution']:
+                                st.caption(f"🎸 파형 분포: {report['waveform_distribution']}")
+
+                            # 노트별 파라미터로 합성
+                            opt_params = [e.get('adsr_params', {}) for e in opt_events]
+                            wav_data = synthesize_with_per_note_params(events, opt_params, sr=44100)
+                            if wav_data:
+                                st.audio(wav_data, format="audio/wav")
+                        else:
+                            st.error("❌ 노트별 최적화 실패")
+
     # Run the ultra-stable loop
     tuner_core(st.session_state.raw_data_cache)
 
