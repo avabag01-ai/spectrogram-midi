@@ -186,38 +186,88 @@ if active_file_path:
                 st.subheader("🎹 Aegis Live Piano Roll")
                 render_vector_piano_roll(midi_base64, height=500, engine="python", theme="beige")
 
-                # 오디오 플레이어 섹션
+                # === 🎧 크로스페이더 오디오 비교 섹션 ===
                 st.markdown("---")
-                st.subheader("🎧 Audio Comparison")
-                audio_col1, audio_col2 = st.columns(2)
+                st.subheader("🎧 Audio Crossfader")
+                st.caption("슬라이더로 원본↔MIDI 사이를 조절하면서 비교 청취")
 
-                with audio_col1:
-                    st.markdown("**원본 음원**")
-                    if 'active_file_path' in st.session_state:
-                        try:
-                            st.audio(st.session_state.active_file_path)
-                        except Exception as e:
-                            st.error(f"원본 재생 실패: {e}")
-                    else:
-                        st.info("원본 파일 없음")
+                # MIDI → WAV 합성
+                synth = get_synthesizer()
+                midi_wav_data = None
+                if synth.is_available():
+                    try:
+                        midi_wav_data = synthesize_midi(midi_data, sample_rate=44100)
+                    except Exception:
+                        pass
 
-                with audio_col2:
-                    st.markdown("**MIDI 합성 (FluidSynth)**")
-                    # FluidSynth로 MIDI → WAV 변환
-                    synth = get_synthesizer()
-                    if synth.is_available():
-                        try:
-                            with st.spinner("🎹 합성 중..."):
-                                wav_data = synthesize_midi(midi_data, sample_rate=44100)
-                            if wav_data:
-                                st.audio(wav_data, format="audio/wav")
-                            else:
-                                st.error("MIDI 합성 실패")
-                        except Exception as e:
-                            st.error(f"합성 오류: {e}")
-                    else:
-                        st.warning("FluidSynth를 찾을 수 없습니다")
-                        st.caption("설치: `brew install fluid-synth`")
+                # 크로스페이더 슬라이더
+                crossfade = st.slider(
+                    "🎚️ 원본 ◀━━━━━━━━━━▶ MIDI",
+                    0.0, 1.0, 0.5, 0.05,
+                    help="왼쪽: 원본 100% / 가운데: 50:50 믹스 / 오른쪽: MIDI 100%"
+                )
+
+                cf_col1, cf_col2, cf_col3 = st.columns([1, 3, 1])
+                with cf_col1:
+                    st.caption(f"🎸 원본: {(1-crossfade)*100:.0f}%")
+                with cf_col3:
+                    st.caption(f"🎹 MIDI: {crossfade*100:.0f}%")
+
+                # 크로스페이드 믹스 생성
+                if 'active_file_path' in st.session_state and midi_wav_data:
+                    try:
+                        # 원본 오디오 로드
+                        y_orig, sr_orig = librosa.load(
+                            st.session_state.active_file_path, sr=44100, duration=30
+                        )
+
+                        # MIDI WAV를 numpy로 변환
+                        midi_wav_io = io.BytesIO(midi_wav_data)
+                        y_midi, _ = librosa.load(midi_wav_io, sr=44100)
+
+                        # 길이 맞추기 (짧은 쪽에 맞춤)
+                        min_len = min(len(y_orig), len(y_midi))
+                        y_orig = y_orig[:min_len]
+                        y_midi = y_midi[:min_len]
+
+                        # 크로스페이드 믹스
+                        y_mix = (1.0 - crossfade) * y_orig + crossfade * y_midi
+
+                        # 정규화
+                        peak = np.max(np.abs(y_mix))
+                        if peak > 0:
+                            y_mix = y_mix / peak * 0.9
+
+                        # float → int16 → WAV bytes
+                        mix_int16 = np.clip(y_mix * 32767, -32768, 32767).astype(np.int16)
+                        import wave as wave_mod
+                        mix_buffer = io.BytesIO()
+                        with wave_mod.open(mix_buffer, 'wb') as wf:
+                            wf.setnchannels(1)
+                            wf.setsampwidth(2)
+                            wf.setframerate(44100)
+                            wf.writeframes(mix_int16.tobytes())
+
+                        with cf_col2:
+                            st.audio(mix_buffer.getvalue(), format="audio/wav")
+
+                    except Exception as e:
+                        st.error(f"크로스페이드 믹스 실패: {e}")
+
+                elif 'active_file_path' in st.session_state:
+                    # FluidSynth 없으면 원본만 재생
+                    with cf_col2:
+                        st.audio(st.session_state.active_file_path)
+                        st.warning("FluidSynth 없음 → 원본만 재생")
+
+                # 개별 재생 버튼
+                sep_col1, sep_col2 = st.columns(2)
+                with sep_col1:
+                    if st.checkbox("🎸 원본 단독 재생"):
+                        st.audio(st.session_state.active_file_path)
+                with sep_col2:
+                    if midi_wav_data and st.checkbox("🎹 MIDI 단독 재생"):
+                        st.audio(midi_wav_data, format="audio/wav")
 
                 st.markdown("---")
                 st.download_button(f"💾 Download {st.session_state.get('active_file_name', 'output')}.mid",
