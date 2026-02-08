@@ -1,1617 +1,1487 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aegis Tuner Pro</title>
-<style>
-:root {
-  --bg: #0a0a0f; --surface: #14141f; --surface2: #1e1e2e;
-  --border: #2a2a3e; --text: #e0e0e8; --dim: #888;
-  --accent: #6c5ce7; --accent2: #a29bfe; --green: #00b894;
-  --red: #ff6b6b; --orange: #fdcb6e; --blue: #74b9ff;
+<!-- Ω_brief: Aegis Tuner Pro UI v2.8 | Single-Page App | Components: Audio Upload, Piano Roll (Canvas), Tablature Gen, Fret Filter, Financial Engine (Bollinger/MACD/RSI), ADSR Synth | Tech: Vanilla JS, CSS3, Streamlit-style layout | Optimized for Port:8508 -->
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Aegis Tuner Pro | One-Screen Intelligence</title><style>
+:root{
+--bg:#050510;
+--surface:rgba(20,20,31,0.65);
+--surface2:rgba(30,30,46,0.7);
+--border:rgba(255,255,255,0.08);
+--text:#e0e0e8;
+--dim:#889;
+--accent:#6c5ce7;
+--accent2:#a29bfe;
+--green:#00b894;
+--red:#ff6b6b;
+--orange:#fdcb6e;
+--blue:#74b9ff;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-h1,h2,h3 { font-weight:600; }
-
-.app { max-width:1200px; margin:0 auto; padding:20px; }
-.header { text-align:center; padding:30px 0 20px; border-bottom:1px solid var(--border); margin-bottom:24px; }
-.header h1 { font-size:28px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.header p { color:var(--dim); margin-top:6px; font-size:14px; }
-
-.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
-.card h2 { font-size:16px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-.card h3 { font-size:14px; margin-bottom:8px; color:var(--accent2); }
-
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-.grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
-@media(max-width:768px) { .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
-
-.upload-zone { border:2px dashed var(--border); border-radius:12px; padding:40px; text-align:center; cursor:pointer; transition:all .2s; }
-.upload-zone:hover { border-color:var(--accent); background:rgba(108,92,231,.05); }
-.upload-zone.dragover { border-color:var(--green); background:rgba(0,184,148,.1); }
-.upload-zone input { display:none; }
-.upload-icon { font-size:48px; margin-bottom:12px; }
-
-.btn { padding:10px 20px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:500; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
-.btn-primary { background:var(--accent); color:#fff; }
-.btn-primary:hover { background:var(--accent2); }
-.btn-primary:disabled { opacity:.5; cursor:not-allowed; }
-.btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
-.btn-secondary:hover { border-color:var(--accent); }
-.btn-green { background:var(--green); color:#fff; }
-.btn-red { background:var(--red); color:#fff; }
-.btn-full { width:100%; justify-content:center; }
-.btn-sm { padding:6px 12px; font-size:12px; }
-
-.input-group { margin-bottom:12px; }
-.input-group label { display:block; font-size:12px; color:var(--dim); margin-bottom:4px; }
-.input-group input, .input-group select { width:100%; padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:14px; }
-.input-group input:focus, .input-group select:focus { outline:none; border-color:var(--accent); }
-input[type="range"] { -webkit-appearance:none; width:100%; height:6px; background:var(--surface2); border-radius:3px; border:none; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; background:var(--accent); border-radius:50%; cursor:pointer; }
-
-.slider-row { display:flex; align-items:center; gap:12px; }
-.slider-row input[type="range"] { flex:1; }
-.slider-val { min-width:48px; text-align:right; font-size:13px; color:var(--accent2); font-variant-numeric:tabular-nums; }
-
-.metric { text-align:center; padding:12px; background:var(--surface2); border-radius:8px; }
-.metric .value { font-size:24px; font-weight:700; color:var(--accent2); }
-.metric .label { font-size:11px; color:var(--dim); margin-top:4px; }
-
-audio { width:100%; margin:8px 0; border-radius:8px; }
-
-.crossfader { display:flex; align-items:center; gap:12px; padding:12px 0; }
-.crossfader span { font-size:12px; color:var(--dim); white-space:nowrap; }
-.crossfader input { flex:1; }
-
-.status { padding:10px 16px; border-radius:8px; margin:8px 0; font-size:13px; }
-.status-info { background:rgba(116,185,255,.1); border-left:3px solid var(--blue); }
-.status-success { background:rgba(0,184,148,.1); border-left:3px solid var(--green); }
-.status-error { background:rgba(255,107,107,.1); border-left:3px solid var(--red); }
-.status-loading { background:rgba(253,203,110,.1); border-left:3px solid var(--orange); }
-
-.spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
-
-.hidden { display:none !important; }
-
-.check-row { display:flex; align-items:center; gap:8px; margin:8px 0; font-size:13px; cursor:pointer; }
-.check-row input[type="checkbox"] { accent-color:var(--accent); }
-
-.tag { display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600; }
-.tag-main { background:rgba(108,92,231,.2); color:var(--accent2); }
-.tag-safe { background:rgba(0,184,148,.2); color:var(--green); }
-.tag-technique { background:rgba(253,203,110,.2); color:var(--orange); }
-
-.needs-analysis { opacity:.4; pointer-events:none; }
-.needs-analysis.active { opacity:1; pointer-events:auto; }
-
-::-webkit-scrollbar { width:6px; height:6px; }
-::-webkit-scrollbar-track { background:var(--bg); }
-::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-
-.sep { border:none; border-top:1px solid var(--border); margin:16px 0; }
-
-/* ─── Piano Roll DAW ─────────────────────────────── */
-.pr-container { position:relative; width:100%; border-radius:8px; overflow:hidden; background:var(--surface2); }
-.pr-toolbar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.pr-toolbar .btn { padding:6px 10px; font-size:12px; }
-.pr-toolbar .sep-v { width:1px; height:20px; background:var(--border); }
-.pr-zoom-group { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--dim); }
-.pr-zoom-group input[type="range"] { width:80px; height:4px; }
-.pr-time-display { font-family:monospace; font-size:12px; color:var(--accent2); margin-left:auto; }
-
-.pr-body { display:flex; position:relative; }
-.pr-keys { width:48px; min-width:48px; background:var(--surface); border-right:1px solid var(--border); overflow:hidden; z-index:2; }
-.pr-keys canvas { display:block; }
-.pr-scroll { flex:1; overflow:auto; position:relative; }
-.pr-scroll canvas { display:block; cursor:crosshair; }
-.pr-scroll.mode-select canvas { cursor:default; }
-.pr-scroll.mode-erase canvas { cursor:not-allowed; }
-
-/* Note editor popup */
-.note-popup { position:absolute; background:var(--surface); border:1px solid var(--accent); border-radius:8px; padding:12px; z-index:100; min-width:200px; box-shadow:0 8px 24px rgba(0,0,0,.5); }
-.note-popup h4 { font-size:13px; margin-bottom:8px; color:var(--accent2); }
-.note-popup .input-row { display:flex; align-items:center; gap:8px; margin:4px 0; font-size:12px; }
-.note-popup .input-row label { min-width:60px; color:var(--dim); }
-.note-popup .input-row input { width:80px; padding:4px 6px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; }
-.note-popup .btn-row { display:flex; gap:6px; margin-top:8px; }
-</style>
-</head>
-<body>
-
-<div class="app">
-  <div class="header">
-    <h1>Aegis Tuner Pro</h1>
-    <p>AI 오디오 → MIDI 변환 엔진</p>
-  </div>
-
-  <!-- Upload Section -->
-  <div class="card" id="upload-card">
-    <h2>오디오 업로드</h2>
-    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-      <div class="upload-icon">🎸</div>
-      <div>여기에 파일을 드래그하거나 클릭하여 선택</div>
-      <div style="color:var(--dim);font-size:12px;margin-top:8px">MP3, WAV 지원</div>
-      <input type="file" id="file-input" accept=".mp3,.wav,.m4a,.ogg,.flac">
-    </div>
-    <div id="file-info" class="hidden" style="margin-top:12px">
-      <div class="status status-success" id="file-status"></div>
-    </div>
-  </div>
-
-  <!-- Analysis Parameters -->
-  <div class="card" id="params-card">
-    <h2>분석 파라미터</h2>
-    <div class="grid-3">
-      <div class="input-group">
-        <label>신뢰도 기준값</label>
-        <div class="slider-row">
-          <input type="range" id="p-confidence" min="0.1" max="0.95" step="0.05" value="0.30" title="낮을수록 노트를 많이 뽑고, 높을수록 확실한 노트만 남깁니다">
-          <span class="slider-val" id="v-confidence">0.30</span>
-        </div>
-      </div>
-      <div class="input-group">
-        <label>최소 노트 길이 (ms)</label>
-        <div class="slider-row">
-          <input type="range" id="p-mindur" min="10" max="500" step="10" value="30" title="이 시간보다 짧은 노트는 무시됩니다. 빠른 연주는 낮게 설정">
-          <span class="slider-val" id="v-mindur">30</span>
-        </div>
-      </div>
-      <div class="input-group">
-        <label>서스테인 (ms)</label>
-        <div class="slider-row">
-          <input type="range" id="p-sustain" min="0" max="1000" step="50" value="200" title="같은 음이 끊겼다 이어질 때 연결해주는 시간. 높을수록 레가토">
-          <span class="slider-val" id="v-sustain">200</span>
-        </div>
-      </div>
-    </div>
-    <div class="grid-2" style="margin-top:12px">
-      <div class="input-group">
-        <label>레이크 감도</label>
-        <div class="slider-row">
-          <input type="range" id="p-rake" min="0.1" max="1.0" step="0.1" value="0.6" title="기타 레이크(빠른 긁기) 감지 민감도. 높을수록 레이크를 적극 제거">
-          <span class="slider-val" id="v-rake">0.6</span>
-        </div>
-      </div>
-      <div class="input-group">
-        <label>시작 / 끝 시간 (초)</label>
-        <div style="display:flex;gap:8px">
-          <input type="number" id="p-start" value="0" min="0" step="1" style="width:50%" title="분석 시작 지점 (초)">
-          <input type="number" id="p-end" value="" placeholder="끝 (자동)" style="width:50%" title="분석 끝 지점. 비워두면 전체 분석">
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;gap:12px;margin-top:16px">
-      <button class="btn btn-primary btn-full" id="btn-analyze" disabled title="오디오를 분석하여 MIDI 노트를 추출합니다">분석 시작</button>
-      <button class="btn btn-secondary" id="btn-refilter" disabled style="white-space:nowrap" title="파라미터만 변경하여 빠르게 재적용 (재분석 없이)">재필터</button>
-    </div>
-    <div id="analyze-status" class="hidden"></div>
-  </div>
-
-  <!-- Results -->
-  <div id="results-section" class="needs-analysis">
-
-    <!-- ═══ PIANO ROLL DAW ═══ -->
-    <div class="card" style="padding:12px">
-      <div class="pr-container">
-        <!-- Toolbar -->
-        <div class="pr-toolbar">
-          <button class="btn btn-sm btn-green" id="pr-play" title="재생/일시정지 (Space)">&#9654; 재생</button>
-          <button class="btn btn-sm btn-secondary" id="pr-stop" title="정지 (처음으로)">&#9632; 정지</button>
-          <div class="sep-v"></div>
-          <button class="btn btn-sm btn-secondary pr-mode active" data-mode="select" title="노트 선택/이동 (S키)">&#9995; 선택</button>
-          <button class="btn btn-sm btn-secondary pr-mode" data-mode="draw" title="노트 그리기 (D키)">&#9998; 그리기</button>
-          <button class="btn btn-sm btn-secondary pr-mode" data-mode="erase" title="노트 지우기 (E키)">&#10060; 지우기</button>
-          <div class="sep-v"></div>
-          <div class="pr-zoom-group">
-            가로 <input type="range" id="pr-zoom-x" min="0.5" max="8" step="0.1" value="1" title="시간축 확대/축소">
-          </div>
-          <div class="pr-zoom-group">
-            세로 <input type="range" id="pr-zoom-y" min="0.5" max="4" step="0.1" value="1" title="음높이축 확대/축소">
-          </div>
-          <div class="sep-v"></div>
-          <label class="check-row" style="margin:0;font-size:11px">
-            <input type="checkbox" id="pr-snap" checked title="노트를 격자에 맞춰 정렬"> 스냅
-          </label>
-          <div class="pr-time-display" id="pr-time">0:00.000 / 0:00</div>
-        </div>
-        <!-- Body: Key labels + Scrollable canvas -->
-        <div class="pr-body" style="height:400px">
-          <div class="pr-keys"><canvas id="pr-keys-canvas"></canvas></div>
-          <div class="pr-scroll" id="pr-scroll"><canvas id="pr-canvas"></canvas></div>
-        </div>
-      </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span id="note-count">0</span>개 노트 &nbsp;
-        <span class="tag tag-main" title="확실하게 감지된 노트">메인</span>
-        <span class="tag tag-safe" title="낮은 신뢰도로 감지된 노트">보조</span>
-        <span class="tag tag-technique" title="벤드, 슬라이드 등 기타 테크닉이 감지된 노트">테크닉</span>
-        <span style="margin-left:auto;font-size:11px;color:var(--dim)">Ctrl+휠: 확대 | 더블클릭: 편집 | Del: 삭제</span>
-      </div>
-    </div>
-
-    <!-- ═══ FRET FILTER + GUITAR TAB ═══ -->
-    <div class="card" id="fret-filter-card">
-      <h2>운지 필터</h2>
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">기타 운지 물리 법칙 기반으로 불가능한 노트 전환을 자동 제거합니다</p>
-      <div class="grid-2">
-        <div class="input-group">
-          <label>최대 프렛 이동 속도 (프렛/초)</label>
-          <div class="slider-row">
-            <input type="range" id="ff-speed" min="10" max="80" step="5" value="40" title="초당 최대 프렛 이동 거리. 낮출수록 엄격하게 필터링. 40이 일반적인 빠른 연주 기준">
-            <span class="slider-val" id="v-ff-speed">40</span>
-          </div>
-        </div>
-        <div class="input-group">
-          <label>보호 노트 길이 (ms)</label>
-          <div class="slider-row">
-            <input type="range" id="ff-protect" min="50" max="500" step="50" value="200" title="이 길이 이상의 노트는 절대 삭제하지 않습니다. 긴 음은 확실한 음이므로 보호">
-            <span class="slider-val" id="v-ff-protect">200</span>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-full" id="btn-fret-filter" title="운지 필터를 적용하여 물리적으로 불가능한 노트를 제거합니다">운지 필터 적용</button>
-      <div id="ff-results" class="hidden" style="margin-top:12px">
-        <div class="grid-3" id="ff-metrics"></div>
-        <div id="ff-removed-list" style="margin-top:8px;max-height:120px;overflow-y:auto;font-size:11px;color:var(--dim)"></div>
-      </div>
-      <div id="ff-status" class="hidden"></div>
-    </div>
-
-    <!-- Guitar Tablature -->
-    <div class="card" id="tab-card">
-      <h2>기타 탭 악보</h2>
-      <div class="pr-toolbar" style="margin-bottom:0">
-        <button class="btn btn-sm btn-primary" id="btn-gen-tab" title="감지된 노트를 기타 탭 악보로 변환합니다">탭 생성</button>
-        <div class="sep-v"></div>
-        <div class="pr-zoom-group">
-          확대 <input type="range" id="tab-zoom" min="0.5" max="4" step="0.1" value="1" title="탭 악보 가로 확대/축소">
-        </div>
-      </div>
-      <div id="tab-scroll" style="overflow-x:auto;overflow-y:hidden;max-height:200px;background:var(--surface2);border-radius:0 0 8px 8px">
-        <canvas id="tab-canvas"></canvas>
-      </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:12px">
-        <span id="tab-note-count">0</span>개 매핑 &nbsp;
-        <span class="tag" style="background:rgba(0,184,148,.2);color:var(--green)" title="줄을 밀어 음을 올리는 주법">벤드</span>
-        <span class="tag" style="background:rgba(162,155,254,.2);color:var(--accent2)" title="프렛을 미끄러지며 이동하는 주법">슬라이드</span>
-        <span class="tag" style="background:rgba(253,203,110,.2);color:var(--orange)" title="왼손으로 프렛을 때려 소리내는 주법">해머온</span>
-        <span class="tag" style="background:rgba(253,121,168,.2);color:#fd79a8" title="프렛에서 손가락을 떼면서 소리내는 주법">풀오프</span>
-      </div>
-    </div>
-
-    <!-- 오디오 크로스페이더 -->
-    <div class="card">
-      <h2>오디오 크로스페이더</h2>
-      <div class="crossfader">
-        <span>원본</span>
-        <input type="range" id="crossfade-slider" min="0" max="1" step="0.05" value="0.5" title="원본과 MIDI 합성음의 비율을 조절합니다">
-        <span>MIDI</span>
-      </div>
-      <div class="grid-3" style="margin-bottom:8px">
-        <div style="text-align:left;font-size:12px;color:var(--dim)" id="cf-orig-pct">50%</div>
-        <div style="text-align:center"><button class="btn btn-sm btn-secondary" id="btn-crossfade" title="설정된 비율로 원본+MIDI 믹스 생성">믹스 생성</button></div>
-        <div style="text-align:right;font-size:12px;color:var(--dim)" id="cf-midi-pct">50%</div>
-      </div>
-      <audio id="audio-mix" controls class="hidden"></audio>
-      <hr class="sep">
-      <div class="grid-2">
-        <div>
-          <button class="btn btn-sm btn-secondary btn-full" id="btn-play-orig" title="업로드한 원본 오디오 재생">원본 오디오</button>
-          <audio id="audio-orig" controls class="hidden" style="margin-top:6px"></audio>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-secondary btn-full" id="btn-play-midi" title="MIDI 변환 결과를 합성음으로 재생">MIDI 오디오</button>
-          <audio id="audio-midi" controls class="hidden" style="margin-top:6px"></audio>
-        </div>
-      </div>
-    </div>
-
-    <!-- 내보내기 -->
-    <div class="card">
-      <h2>내보내기</h2>
-      <button class="btn btn-green btn-full" id="btn-download-midi" title="변환된 MIDI 파일을 다운로드합니다">MIDI 다운로드</button>
-    </div>
-
-    <!-- ADSR 신스 -->
-    <div class="card">
-      <h2>ADSR 소프트 신스</h2>
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">파형/엔벨로프 튜닝으로 원본 음색에 맞추기</p>
-      <div class="grid-2">
-        <div class="input-group">
-          <label>기타 프리셋</label>
-          <select id="adsr-preset" title="기타 종류에 따른 음색 프리셋 선택">
-            <option value="nylon">나일론 (클래식)</option>
-            <option value="steel">스틸 (어쿠스틱)</option>
-            <option value="electric_clean" selected>일렉 클린</option>
-            <option value="electric_overdrive">일렉 오버드라이브</option>
-            <option value="muted">뮤트</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:end">
-          <label class="check-row"><input type="checkbox" id="adsr-envelope-match" title="원본 오디오의 엔벨로프를 분석하여 자동 매칭"> 엔벨로프 자동 매칭</label>
-        </div>
-      </div>
-      <div id="adsr-preset-info" style="font-size:11px;color:var(--dim);margin:8px 0"></div>
-      <button class="btn btn-primary btn-full" id="btn-adsr-synth" title="선택한 프리셋으로 MIDI를 합성합니다">ADSR 합성</button>
-      <audio id="audio-adsr" controls class="hidden" style="margin-top:8px"></audio>
-      <div id="adsr-status" class="hidden"></div>
-    </div>
-
-    <!-- 역분석 -->
-    <div class="card">
-      <h2>역분석 검증</h2>
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">MIDI→WAV→MIDI 역변환으로 정확도를 검증합니다</p>
-      <button class="btn btn-primary btn-full" id="btn-reverse" title="변환 결과를 다시 역변환하여 정확도를 측정합니다">역분석 실행</button>
-      <div id="reverse-results" class="hidden" style="margin-top:12px"><div class="grid-3" id="reverse-metrics"></div></div>
-      <div id="reverse-status" class="hidden"></div>
-    </div>
-
-    <!-- 자동 파라미터 매칭 -->
-    <div class="card">
-      <h2>자동 파라미터 매칭</h2>
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">그리드 서치로 최적의 분석 파라미터를 자동 탐색합니다</p>
-      <button class="btn btn-primary btn-full" id="btn-automatch" title="최적의 신뢰도/길이/서스테인 값을 자동으로 찾습니다">자동 매칭</button>
-      <div id="automatch-results" class="hidden" style="margin-top:12px"></div>
-      <div id="automatch-status" class="hidden"></div>
-    </div>
-
-    <!-- 이펙트 학습 루프 -->
-    <div class="card">
-      <h2>이펙트 학습 루프</h2>
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">MIDI + 이펙트 → 재분석을 반복하여 음색을 최적화합니다</p>
-      <div class="grid-2">
-        <div class="input-group">
-          <label>이펙트 프리셋</label>
-          <select id="effect-preset" title="적용할 이펙트 종류를 선택합니다"></select>
-        </div>
-        <div class="input-group">
-          <label>최대 반복 횟수</label>
-          <div class="slider-row">
-            <input type="range" id="effect-iters" min="1" max="10" step="1" value="5" title="학습 루프를 몇 번 반복할지 설정합니다">
-            <span class="slider-val" id="v-effect-iters">5</span>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-full" id="btn-effect-loop" title="이펙트 학습 루프를 시작합니다">학습 루프 시작</button>
-      <div id="effect-results" class="hidden" style="margin-top:12px"></div>
-      <div id="effect-status" class="hidden"></div>
-    </div>
-
-    <!-- 노트별 최적화 -->
-    <div class="card">
-      <h2>노트별 최적화</h2>
-      <p style="font-size:12px;color:var(--dim);margin-bottom:12px">각 노트마다 개별 ADSR 파라미터를 최적화합니다 (멀티프로세싱)</p>
-      <div class="grid-2">
-        <label class="check-row"><input type="checkbox" id="pno-quick" checked title="빠른 분석 모드. 해제하면 27개 조합을 시도하여 정밀 분석"> 빠른 모드</label>
-        <label class="check-row"><input type="checkbox" id="pno-parallel" checked title="CPU 코어를 활용한 병렬 처리"> 병렬 처리</label>
-      </div>
-      <button class="btn btn-primary btn-full" id="btn-pno" title="모든 노트에 대해 개별 최적화를 실행합니다">노트별 최적화 실행</button>
-      <div id="pno-results" class="hidden" style="margin-top:12px"></div>
-      <audio id="audio-pno" controls class="hidden" style="margin-top:8px"></audio>
-      <div id="pno-status" class="hidden"></div>
-    </div>
-
-  </div>
-</div>
-
-<!-- 노트 편집 팝업 -->
-<div class="note-popup hidden" id="note-popup">
-  <h4>노트 편집</h4>
-  <div class="input-row"><label>음높이</label><input type="number" id="np-note" min="0" max="127"><span id="np-name" style="font-size:11px;color:var(--dim)"></span></div>
-  <div class="input-row"><label>세기</label><input type="number" id="np-vel" min="1" max="127"></div>
-  <div class="input-row"><label>시작 (ms)</label><input type="number" id="np-start" min="0"></div>
-  <div class="input-row"><label>끝 (ms)</label><input type="number" id="np-end" min="0"></div>
-  <div class="btn-row">
-    <button class="btn btn-sm btn-primary" id="np-save">저장</button>
-    <button class="btn btn-sm btn-red" id="np-delete">삭제</button>
-    <button class="btn btn-sm btn-secondary" id="np-cancel">취소</button>
-  </div>
-</div>
-
-<script>
-// ─── State ──────────────────────────────────────────
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+body{
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+background:radial-gradient(circle at 15% 50%,rgba(108,92,231,0.1),transparent 25%),
+radial-gradient(circle at 85% 30%,rgba(0,184,148,0.05),transparent 25%),
+var(--bg);
+color:var(--text);
+min-height:100vh;
+}
+h1,
+h2,
+h3{
+font-weight:600;
+}
+.app{
+max-width:1200px;
+margin:0 auto;
+padding:20px;
+}
+.header{
+text-align:center;
+padding:30px 0 20px;
+border-bottom:1px solid var(--border);
+margin-bottom:24px;
+}
+.header h1{
+font-size:28px;
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+-webkit-background-clip:text;
+background-clip:text;
+-webkit-text-fill-color:transparent;
+text-shadow:0 0 20px rgba(108,92,231,0.3);
+}
+.header p{
+color:var(--dim);
+margin-top:6px;
+font-size:14px;
+letter-spacing:1px;
+}
+.card{
+background:var(--surface);
+backdrop-filter:blur(12px);
+-webkit-backdrop-filter:blur(12px);
+border:1px solid var(--border);
+border-radius:16px;
+padding:24px;
+margin-bottom:20px;
+box-shadow:0 8px 32px 0 rgba(0,0,0,0.3);
+}
+.card h2{
+font-size:16px;
+margin-bottom:16px;
+display:flex;
+align-items:center;
+gap:8px;
+color:#fff;
+}
+.card h3{
+font-size:14px;
+margin-bottom:8px;
+color:var(--accent2);
+}
+.grid-2{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:16px;
+}
+.grid-3{
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:12px;
+}
+.grid-4{
+display:grid;
+grid-template-columns:1fr 1fr 1fr 1fr;
+gap:12px;
+}
+@media(max-width:768px){
+.grid-2,
+.grid-3,
+.grid-4{
+grid-template-columns:1fr;
+}
+}
+.upload-zone{
+border:2px dashed var(--border);
+border-radius:12px;
+padding:40px;
+text-align:center;
+cursor:pointer;
+transition:all .2s;
+}
+.upload-zone:hover{
+border-color:var(--accent);
+background:rgba(108,92,231,.05);
+}
+.upload-zone.dragover{
+border-color:var(--green);
+background:rgba(0,184,148,.1);
+}
+.upload-zone input{
+display:none;
+}
+.upload-icon{
+font-size:48px;
+margin-bottom:12px;
+}
+.btn{
+padding:10px 20px;
+border-radius:8px;
+border:none;
+cursor:pointer;
+font-size:14px;
+font-weight:500;
+transition:all .15s;
+display:inline-flex;
+align-items:center;
+gap:6px;
+}
+.btn-primary{
+background:var(--accent);
+color:#fff;
+}
+.btn-primary:hover{
+background:var(--accent2);
+}
+.btn-primary:disabled{
+opacity:.5;
+cursor:not-allowed;
+}
+.btn-secondary{
+background:var(--surface2);
+color:var(--text);
+border:1px solid var(--border);
+}
+.btn-secondary:hover{
+border-color:var(--accent);
+}
+.btn-green{
+background:var(--green);
+color:#fff;
+}
+.btn-red{
+background:var(--red);
+color:#fff;
+}
+.btn-full{
+width:100%;
+justify-content:center;
+}
+.btn-sm{
+padding:6px 12px;
+font-size:12px;
+}
+.input-group{
+margin-bottom:12px;
+}
+.input-group label{
+display:block;
+font-size:12px;
+color:var(--dim);
+margin-bottom:4px;
+}
+.input-group input,
+.input-group select{
+width:100%;
+padding:8px 12px;
+background:var(--surface2);
+border:1px solid var(--border);
+border-radius:6px;
+color:var(--text);
+font-size:14px;
+}
+.input-group input:focus,
+.input-group select:focus{
+outline:none;
+border-color:var(--accent);
+}
+input[type="range"]{
+-webkit-appearance:none;
+appearance:none;
+width:100%;
+height:6px;
+background:var(--surface2);
+border-radius:3px;
+border:none;
+}
+input[type="range"]::-webkit-slider-thumb{
+-webkit-appearance:none;
+appearance:none;
+width:16px;
+height:16px;
+background:var(--accent);
+border-radius:50%;
+cursor:pointer;
+}
+.slider-row{
+display:flex;
+align-items:center;
+gap:12px;
+}
+.slider-row input[type="range"]{
+flex:1;
+}
+.slider-val{
+min-width:48px;
+text-align:right;
+font-size:13px;
+color:var(--accent2);
+font-variant-numeric:tabular-nums;
+}
+.metric{
+text-align:center;
+padding:12px;
+background:var(--surface2);
+border-radius:8px;
+}
+.metric .value{
+font-size:24px;
+font-weight:700;
+color:var(--accent2);
+}
+.metric .label{
+font-size:11px;
+color:var(--dim);
+margin-top:4px;
+}
+audio{
+width:100%;
+margin:8px 0;
+border-radius:8px;
+}
+.crossfader{
+display:flex;
+align-items:center;
+gap:12px;
+padding:12px 0;
+}
+.crossfader span{
+font-size:12px;
+color:var(--dim);
+white-space:nowrap;
+}
+.crossfader input{
+flex:1;
+}
+.status{
+padding:10px 16px;
+border-radius:8px;
+margin:8px 0;
+font-size:13px;
+}
+.status-info{
+background:rgba(116,185,255,.1);
+border-left:3px solid var(--blue);
+}
+.status-success{
+background:rgba(0,184,148,.1);
+border-left:3px solid var(--green);
+}
+.status-error{
+background:rgba(255,107,107,.1);
+border-left:3px solid var(--red);
+}
+.status-loading{
+background:rgba(253,203,110,.1);
+border-left:3px solid var(--orange);
+}
+.spinner{
+display:inline-block;
+width:16px;
+height:16px;
+border:2px solid var(--border);
+border-top-color:var(--accent);
+border-radius:50%;
+animation:spin .6s linear infinite;
+}
+@keyframes spin{
+to{
+transform:rotate(360deg);
+}
+}
+.hidden{
+display:none !important;
+}
+.check-row{
+display:flex;
+align-items:center;
+gap:8px;
+margin:8px 0;
+font-size:13px;
+cursor:pointer;
+}
+.check-row input[type="checkbox"]{
+accent-color:var(--accent);
+}
+.tag{
+display:inline-block;
+padding:3px 8px;
+border-radius:4px;
+font-size:11px;
+font-weight:600;
+}
+.tag-main{
+background:rgba(108,92,231,.2);
+color:var(--accent2);
+}
+.tag-safe{
+background:rgba(0,184,148,.2);
+color:var(--green);
+}
+.tag-technique{
+background:rgba(253,203,110,.2);
+color:var(--orange);
+}
+.needs-analysis{
+opacity:.4;
+pointer-events:none;
+}
+.needs-analysis.active{
+opacity:1;
+pointer-events:auto;
+}
+::-webkit-scrollbar{
+width:6px;
+height:6px;
+}
+::-webkit-scrollbar-track{
+background:var(--bg);
+}
+::-webkit-scrollbar-thumb{
+background:var(--border);
+border-radius:3px;
+}
+.sep{
+border:none;
+border-top:1px solid var(--border);
+margin:16px 0;
+}
+.pr-container{
+position:relative;
+width:100%;
+border-radius:8px;
+overflow:hidden;
+background:var(--surface2);
+}
+.pr-toolbar{
+display:flex;
+align-items:center;
+gap:8px;
+padding:8px 12px;
+background:var(--surface);
+border-bottom:1px solid var(--border);
+flex-wrap:wrap;
+}
+.pr-toolbar .btn{
+padding:6px 10px;
+font-size:12px;
+}
+.pr-toolbar .sep-v{
+width:1px;
+height:20px;
+background:var(--border);
+}
+.pr-zoom-group{
+display:flex;
+align-items:center;
+gap:4px;
+font-size:11px;
+color:var(--dim);
+}
+.pr-zoom-group input[type="range"]{
+width:80px;
+height:4px;
+}
+.pr-time-display{
+font-family:monospace;
+font-size:12px;
+color:var(--accent2);
+margin-left:auto;
+}
+.pr-body{
+display:flex;
+position:relative;
+}
+.pr-keys{
+width:48px;
+min-width:48px;
+background:var(--surface);
+border-right:1px solid var(--border);
+overflow:hidden;
+z-index:2;
+}
+.pr-keys canvas{
+display:block;
+}
+.pr-scroll{
+flex:1;
+overflow:auto;
+position:relative;
+}
+.pr-scroll canvas{
+display:block;
+cursor:crosshair;
+}
+.pr-scroll.mode-select canvas{
+cursor:default;
+}
+.pr-scroll.mode-erase canvas{
+cursor:not-allowed;
+}
+.note-popup{
+position:absolute;
+background:var(--surface);
+border:1px solid var(--accent);
+border-radius:8px;
+padding:12px;
+z-index:100;
+min-width:200px;
+box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+.note-popup h4{
+font-size:13px;
+margin-bottom:8px;
+color:var(--accent2);
+}
+.note-popup .input-row{
+display:flex;
+align-items:center;
+gap:8px;
+margin:4px 0;
+font-size:12px;
+}
+.note-popup .input-row label{
+min-width:60px;
+color:var(--dim);
+}
+.note-popup .input-row input{
+width:80px;
+padding:4px 6px;
+background:var(--surface2);
+border:1px solid var(--border);
+border-radius:4px;
+color:var(--text);
+font-size:12px;
+}
+.note-popup .btn-row{
+display:flex;
+gap:6px;
+margin-top:8px;
+}
+</style></head><body><div class="app"><div class="header"><h1>Aegis Tuner Pro</h1><p>AI 오디오 → MIDI 변환 엔진</p></div><div class="card" id="upload-card"><h2>오디오 업로드</h2><div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"><div class="upload-icon">🎸</div><div>여기에 파일을 드래그하거나 클릭하여 선택</div><div style="color:var(--dim);font-size:12px;margin-top:8px">MP3,WAV 지원</div><input type="file" id="file-input" accept=".mp3,.wav,.m4a,.ogg,.flac"></div><div id="file-info" class="hidden" style="margin-top:12px"><div class="status status-success" id="file-status"></div></div></div><div class="card" id="params-card"><h2>분석 파라미터</h2><div class="grid-3"><div class="input-group"><label>신뢰도 기준값</label><div class="slider-row"><input type="range" id="p-confidence" min="0.1" max="0.95" step="0.05" value="0.30"
+title="낮을수록 노트를 많이 뽑고,높을수록 확실한 노트만 남깁니다"><span class="slider-val" id="v-confidence">0.30</span></div></div><div class="input-group"><label>최소 노트 길이 (ms)</label><div class="slider-row"><input type="range" id="p-mindur" min="10" max="500" step="10" value="30"
+title="이 시간보다 짧은 노트는 무시됩니다. 빠른 연주는 낮게 설정"><span class="slider-val" id="v-mindur">30</span></div></div><div class="input-group"><label>서스테인 (ms)</label><div class="slider-row"><input type="range" id="p-sustain" min="0" max="1000" step="50" value="200"
+title="같은 음이 끊겼다 이어질 때 연결해주는 시간. 높을수록 레가토"><span class="slider-val" id="v-sustain">200</span></div></div></div><div class="grid-2" style="margin-top:12px"><div class="input-group"><label>레이크 감도</label><div class="slider-row"><input type="range" id="p-rake" min="0.1" max="1.0" step="0.1" value="0.6"
+title="기타 레이크(빠른 긁기) 감지 민감도. 높을수록 레이크를 적극 제거"><span class="slider-val" id="v-rake">0.6</span></div></div><div class="input-group"><label>시작 / 끝 시간 (초)</label><div style="display:flex;gap:8px"><input type="number" id="p-start" value="0" min="0" step="1" style="width:50%" title="분석 시작 지점 (초)"><input type="number" id="p-end" value="" placeholder="끝 (자동)" style="width:50%" title="분석 끝 지점. 비워두면 전체 분석"></div></div></div><div style="display:flex;gap:12px;margin-top:16px"><button class="btn btn-primary btn-full" id="btn-analyze" disabled title="오디오를 분석하여 MIDI 노트를 추출합니다">분석
+시작</button><button class="btn btn-secondary" id="btn-refilter" disabled style="white-space:nowrap"
+title="파라미터만 변경하여 빠르게 재적용 (재분석 없이)">재필터</button></div><div id="analyze-status" class="hidden"></div></div><div id="results-section" class="needs-analysis"><div class="card" style="padding:12px"><div class="pr-container"><div class="pr-toolbar"><button class="btn btn-sm btn-green" id="pr-play" title="재생/일시정지 (Space)">&#9654;재생</button><button class="btn btn-sm btn-secondary" id="pr-stop" title="정지 (처음으로)">&#9632;정지</button><div class="sep-v"></div><button class="btn btn-sm btn-secondary pr-mode active" data-mode="select" title="노트 선택/이동 (S키)">&#9995;
+선택</button><button class="btn btn-sm btn-secondary pr-mode" data-mode="draw" title="노트 그리기 (D키)">&#9998;그리기</button><button class="btn btn-sm btn-secondary pr-mode" data-mode="erase" title="노트 지우기 (E키)">&#10060;지우기</button><div class="sep-v"></div><div class="pr-zoom-group">
+가로 <input type="range" id="pr-zoom-x" min="0.5" max="8" step="0.1" value="1" title="시간축 확대/축소"></div><div class="pr-zoom-group">
+세로 <input type="range" id="pr-zoom-y" min="0.5" max="4" step="0.1" value="1" title="음높이축 확대/축소"></div><div class="sep-v"></div><label class="check-row" style="margin:0;font-size:11px"><input type="checkbox" id="pr-snap" checked title="노트를 격자에 맞춰 정렬"> 스냅
+</label><div class="pr-time-display" id="pr-time">0:00.000 / 0:00</div></div><div class="pr-body" style="height:400px"><div class="pr-keys"><canvas id="pr-keys-canvas"></canvas></div><div class="pr-scroll" id="pr-scroll"><canvas id="pr-canvas"></canvas></div></div></div><div
+style="margin-top:8px;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span id="note-count">0</span>개 노트 &nbsp;
+<span class="tag tag-main" title="확실하게 감지된 노트">메인</span><span class="tag tag-safe" title="낮은 신뢰도로 감지된 노트">보조</span><span class="tag tag-technique" title="벤드,슬라이드 등 기타 테크닉이 감지된 노트">테크닉</span><span style="margin-left:auto;font-size:11px;color:var(--dim)">Ctrl+휠:확대 | 더블클릭:편집 | Del:삭제</span></div></div><div class="card" id="fret-filter-card"><h2>운지 필터</h2><p style="font-size:12px;color:var(--dim);margin-bottom:12px">기타 운지 물리 법칙 기반으로 불가능한 노트 전환을 자동 제거합니다</p><div class="grid-2"><div class="input-group"><label>최대 프렛 이동 속도 (프렛/초)</label><div class="slider-row"><input type="range" id="ff-speed" min="10" max="80" step="5" value="40"
+title="초당 최대 프렛 이동 거리. 낮출수록 엄격하게 필터링. 40이 일반적인 빠른 연주 기준"><span class="slider-val" id="v-ff-speed">40</span></div></div><div class="input-group"><label>보호 노트 길이 (ms)</label><div class="slider-row"><input type="range" id="ff-protect" min="50" max="500" step="50" value="200"
+title="이 길이 이상의 노트는 절대 삭제하지 않습니다. 긴 음은 확실한 음이므로 보호"><span class="slider-val" id="v-ff-protect">200</span></div></div></div><button class="btn btn-primary btn-full" id="btn-fret-filter" title="운지 필터를 적용하여 물리적으로 불가능한 노트를 제거합니다">운지 필터
+적용</button><div id="ff-results" class="hidden" style="margin-top:12px"><div class="grid-3" id="ff-metrics"></div><div id="ff-removed-list"
+style="margin-top:8px;max-height:120px;overflow-y:auto;font-size:11px;color:var(--dim)"></div></div><div id="ff-status" class="hidden"></div></div><div class="card" id="tab-card"><h2>기타 탭 악보</h2><div class="pr-toolbar" style="margin-bottom:0"><button class="btn btn-sm btn-primary" id="btn-gen-tab" title="감지된 노트를 기타 탭 악보로 변환합니다">탭 생성</button><div class="sep-v"></div><div class="pr-zoom-group">
+확대 <input type="range" id="tab-zoom" min="0.5" max="4" step="0.1" value="1" title="탭 악보 가로 확대/축소"></div></div><div id="tab-scroll"
+style="overflow-x:auto;overflow-y:hidden;max-height:200px;background:var(--surface2);border-radius:0 0 8px 8px"><canvas id="tab-canvas"></canvas></div><div style="margin-top:8px;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:12px"><span id="tab-note-count">0</span>개 매핑 &nbsp;
+<span class="tag" style="background:rgba(0,184,148,.2);color:var(--green)" title="줄을 밀어 음을 올리는 주법">벤드</span><span class="tag" style="background:rgba(162,155,254,.2);color:var(--accent2)"
+title="프렛을 미끄러지며 이동하는 주법">슬라이드</span><span class="tag" style="background:rgba(253,203,110,.2);color:var(--orange)"
+title="왼손으로 프렛을 때려 소리내는 주법">해머온</span><span class="tag" style="background:rgba(253,121,168,.2);color:#fd79a8"
+title="프렛에서 손가락을 떼면서 소리내는 주법">풀오프</span></div></div><div class="card"><h2>오디오 크로스페이더</h2><div class="crossfader"><span>원본</span><input type="range" id="crossfade-slider" min="0" max="1" step="0.05" value="0.5"
+title="원본과 MIDI 합성음의 비율을 조절합니다"><span>MIDI</span></div><div class="grid-3" style="margin-bottom:8px"><div style="text-align:left;font-size:12px;color:var(--dim)" id="cf-orig-pct">50%</div><div style="text-align:center"><button class="btn btn-sm btn-secondary" id="btn-crossfade"
+title="설정된 비율로 원본+MIDI 믹스 생성">믹스 생성</button></div><div style="text-align:right;font-size:12px;color:var(--dim)" id="cf-midi-pct">50%</div></div><audio id="audio-mix" controls class="hidden"></audio><hr class="sep"><div class="grid-2"><div><button class="btn btn-sm btn-secondary btn-full" id="btn-play-orig" title="업로드한 원본 오디오 재생">원본 오디오</button><audio id="audio-orig" controls class="hidden" style="margin-top:6px"></audio></div><div><button class="btn btn-sm btn-secondary btn-full" id="btn-play-midi" title="MIDI 변환 결과를 합성음으로 재생">MIDI
+오디오</button><audio id="audio-midi" controls class="hidden" style="margin-top:6px"></audio></div></div></div><div class="card"><h2>내보내기</h2><button class="btn btn-green btn-full" id="btn-download-midi" title="변환된 MIDI 파일을 다운로드합니다">MIDI 다운로드</button></div><div class="card"><h2>ADSR 소프트 신스</h2><p style="font-size:12px;color:var(--dim);margin-bottom:12px">파형/엔벨로프 튜닝으로 원본 음색에 맞추기</p><div class="grid-2"><div class="input-group"><label>기타 프리셋</label><select id="adsr-preset" title="기타 종류에 따른 음색 프리셋 선택"><option value="nylon">나일론 (클래식)</option><option value="steel">스틸 (어쿠스틱)</option><option value="electric_clean" selected>일렉 클린</option><option value="electric_overdrive">일렉 오버드라이브</option><option value="muted">뮤트</option></select></div><div style="display:flex;align-items:end"><label class="check-row"><input type="checkbox" id="adsr-envelope-match" title="원본 오디오의 엔벨로프를 분석하여 자동 매칭">
+엔벨로프 자동 매칭</label></div></div><div id="adsr-preset-info" style="font-size:11px;color:var(--dim);margin:8px 0"></div><button class="btn btn-primary btn-full" id="btn-adsr-synth" title="선택한 프리셋으로 MIDI를 합성합니다">ADSR 합성</button><audio id="audio-adsr" controls class="hidden" style="margin-top:8px"></audio><div id="adsr-status" class="hidden"></div></div><div class="card"><h2>역분석 검증</h2><p style="font-size:12px;color:var(--dim);margin-bottom:12px">MIDI→WAV→MIDI 역변환으로 정확도를 검증합니다</p><button class="btn btn-primary btn-full" id="btn-reverse" title="변환 결과를 다시 역변환하여 정확도를 측정합니다">역분석 실행</button><div id="reverse-results" class="hidden" style="margin-top:12px"><div class="grid-3" id="reverse-metrics"></div></div><div id="reverse-status" class="hidden"></div></div><div class="card"><h2>자동 파라미터 매칭</h2><p style="font-size:12px;color:var(--dim);margin-bottom:12px">그리드 서치로 최적의 분석 파라미터를 자동 탐색합니다</p><button class="btn btn-primary btn-full" id="btn-automatch" title="최적의 신뢰도/길이/서스테인 값을 자동으로 찾습니다">자동 매칭</button><div id="automatch-results" class="hidden" style="margin-top:12px"></div><div id="automatch-status" class="hidden"></div></div><div class="card"><h2>이펙트 학습 루프</h2><p style="font-size:12px;color:var(--dim);margin-bottom:12px">MIDI + 이펙트 → 재분석을 반복하여 음색을 최적화합니다</p><div class="grid-2"><div class="input-group"><label>이펙트 프리셋</label><select id="effect-preset" title="적용할 이펙트 종류를 선택합니다"></select></div><div class="input-group"><label>최대 반복 횟수</label><div class="slider-row"><input type="range" id="effect-iters" min="1" max="10" step="1" value="5" title="학습 루프를 몇 번 반복할지 설정합니다"><span class="slider-val" id="v-effect-iters">5</span></div></div></div><button class="btn btn-primary btn-full" id="btn-effect-loop" title="이펙트 학습 루프를 시작합니다">학습 루프 시작</button><div id="effect-results" class="hidden" style="margin-top:12px"></div><div id="effect-status" class="hidden"></div></div><div class="card"><h2>노트별 최적화</h2><p style="font-size:12px;color:var(--dim);margin-bottom:12px">각 노트마다 개별 ADSR 파라미터를 최적화합니다 (멀티프로세싱)</p><div class="grid-2"><label class="check-row"><input type="checkbox" id="pno-quick" checked
+title="빠른 분석 모드. 해제하면 27개 조합을 시도하여 정밀 분석"> 빠른 모드</label><label class="check-row"><input type="checkbox" id="pno-parallel" checked title="CPU 코어를 활용한 병렬 처리"> 병렬
+처리</label></div><button class="btn btn-primary btn-full" id="btn-pno" title="모든 노트에 대해 개별 최적화를 실행합니다">노트별 최적화 실행</button><div id="pno-results" class="hidden" style="margin-top:12px"></div><audio id="audio-pno" controls class="hidden" style="margin-top:8px"></audio><div id="pno-status" class="hidden"></div></div></div></div><div class="note-popup hidden" id="note-popup"><h4>노트 편집</h4><div class="input-row"><label>음높이</label><input type="number" id="np-note" min="0" max="127"><span id="np-name"
+style="font-size:11px;color:var(--dim)"></span></div><div class="input-row"><label>세기</label><input type="number" id="np-vel" min="1" max="127"></div><div class="input-row"><label>시작 (ms)</label><input type="number" id="np-start" min="0"></div><div class="input-row"><label>끝 (ms)</label><input type="number" id="np-end" min="0"></div><div class="btn-row"><button class="btn btn-sm btn-primary" id="np-save">저장</button><button class="btn btn-sm btn-red" id="np-delete">삭제</button><button class="btn btn-sm btn-secondary" id="np-cancel">취소</button></div></div><script>
 let sessionId = null;
-const API = '';
-
-// ─── Helpers ────────────────────────────────────────
-function $(id) { return document.getElementById(id); }
-function show(el) { el.classList.remove('hidden'); }
-function hide(el) { el.classList.add('hidden'); }
-function showStatus(elId, msg, type='info') {
-  const el = $(elId);
-  el.className = `status status-${type}`;
-  el.innerHTML = type === 'loading' ? `<span class="spinner"></span> ${msg}` : msg;
-  show(el);
+const API = 'http://localhost:8508';
+function $(id){
+const el = document.getElementById(id);
+if (!el) console.warn(`Element not found:${id}`);
+return el;
 }
-function hideStatus(elId) { hide($(elId)); }
-async function apiFetch(url, opts={}) {
-  const resp = await fetch(API + url, opts);
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({detail: resp.statusText}));
-    throw new Error(err.detail || 'Request failed');
-  }
-  return resp;
+function show(el){if (el?.classList) el.classList.remove('hidden');}
+function hide(el){if (el?.classList) el.classList.add('hidden');}
+function showStatus(elId,msg,type = 'info'){
+const el = $(elId);
+if (!el) return;
+el.className = `status status-${type}`;
+el.innerHTML = type === 'loading' ? `<span class="spinner"></span> ${msg}`:msg;
+show(el);
 }
-
+function hideStatus(elId){hide($(elId));}
+async function apiFetch(url,opts ={}){
+const resp = await fetch(API + url,opts);
+if (!resp.ok){
+const err = await resp.json().catch(() => ({detail:resp.statusText}));
+throw new Error(err.detail || 'Request failed');
+}
+return resp;
+}
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-function noteName(n) { return NOTE_NAMES[n%12] + (Math.floor(n/12)-1); }
-
-// ─── Slider sync ────────────────────────────────────
-document.querySelectorAll('.slider-row input[type="range"]').forEach(slider => {
-  const valSpan = slider.parentElement.querySelector('.slider-val');
-  if (!valSpan) return;
-  slider.oninput = () => valSpan.textContent = slider.value;
-  valSpan.textContent = slider.value;
+function noteName(n){return NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 1);}
+document.querySelectorAll('.slider-row input[type="range"]').forEach(slider =>{
+const valSpan = slider.parentElement.querySelector('.slider-val');
+if (!valSpan) return;
+slider.oninput = () => valSpan.textContent = slider.value;
+valSpan.textContent = slider.value;
 });
-$('effect-iters').oninput = function() { $('v-effect-iters').textContent = this.value; };
-
-// ─── Debounce helper ────────────────────────────────
-function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
-
-// ─── Auto fret filter on slider change ──────────────
-// 운지 필터 슬라이더만 실시간 반영 (Analysis 파라미터는 수동)
-// refilter로 원본 복원 → fret filter 적용 체이닝
+$('effect-iters').oninput = function (){$('v-effect-iters').textContent = this.value;};
+function debounce(fn,ms){let t;return (...args) =>{clearTimeout(t);t = setTimeout(() => fn(...args),ms);};}
 let _ffPending = false;
-const autoFretFilter = debounce(async () => {
-  if (!sessionId || _ffPending) return;
-  _ffPending = true;
-  try {
-    // 1. refilter로 base events 복원
-    const rfParams = new URLSearchParams({
-      confidence_threshold: $('p-confidence').value,
-      min_note_duration_ms: $('p-mindur').value,
-      sustain_ms: $('p-sustain').value,
-    });
-    await apiFetch(`/api/refilter/${sessionId}?${rfParams}`, { method:'POST' });
-    // 2. fret filter 적용
-    const ffParams = new URLSearchParams({
-      max_fret_speed: $('ff-speed').value,
-      protect_long_notes_ms: $('ff-protect').value,
-    });
-    const ffResp = await apiFetch(`/api/fret-filter/${sessionId}?${ffParams}`, { method:'POST' });
-    const ffData = await ffResp.json();
-    const rpt = ffData.report || {};
-    currentEvents = (ffData.events || []).map((e,i) => ({...e, _idx:i}));
-    $('note-count').textContent = currentEvents.length;
-    prState.selectedNote = null;
-    drawPR();
-    $('ff-metrics').innerHTML = `
-      <div class="metric"><div class="value">${rpt.original_count||0}</div><div class="label">원본</div></div>
-      <div class="metric"><div class="value" style="color:var(--green)">${rpt.filtered_count||0}</div><div class="label">유지</div></div>
-      <div class="metric"><div class="value" style="color:var(--red)">${rpt.removed_count||0}</div><div class="label">제거</div></div>`;
-    show($('ff-results'));
-    if (tabData.length > 0) {
-      tabData = generateTabData(currentEvents);
-      drawTab(tabData);
-      $('tab-note-count').textContent = tabData.length;
-    }
-  } catch(e) { console.warn('Auto fret filter error:', e); }
-  finally { _ffPending = false; }
-}, 500);
-
-['ff-speed','ff-protect'].forEach(id => {
-  $(id).addEventListener('input', autoFretFilter);
+const autoFretFilter = debounce(async () =>{
+if (!sessionId || _ffPending) return;
+_ffPending = true;
+try{
+const rfParams = new URLSearchParams({
+confidence_threshold:$('p-confidence').value,
+min_note_duration_ms:$('p-mindur').value,
+sustain_ms:$('p-sustain').value,
 });
-
-$('crossfade-slider').oninput = function() {
-  const v = parseFloat(this.value);
-  $('cf-orig-pct').textContent = `${((1-v)*100).toFixed(0)}%`;
-  $('cf-midi-pct').textContent = `${(v*100).toFixed(0)}%`;
-};
-
-// ─── Upload ─────────────────────────────────────────
-const uploadZone = $('upload-zone'), fileInput = $('file-input');
-['dragenter','dragover'].forEach(e => uploadZone.addEventListener(e, ev => { ev.preventDefault(); uploadZone.classList.add('dragover'); }));
-['dragleave','drop'].forEach(e => uploadZone.addEventListener(e, ev => { ev.preventDefault(); uploadZone.classList.remove('dragover'); }));
-uploadZone.addEventListener('drop', ev => { if (ev.dataTransfer.files[0]) uploadFile(ev.dataTransfer.files[0]); });
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) uploadFile(fileInput.files[0]); });
-
-async function uploadFile(file) {
-  showStatus('file-status', `${file.name} 업로드 중...`); show($('file-info'));
-  const form = new FormData(); form.append('file', file);
-  try {
-    const resp = await apiFetch('/api/upload', { method:'POST', body:form });
-    const data = await resp.json();
-    sessionId = data.session_id;
-    $('file-status').className = 'status status-success';
-    $('file-status').textContent = `${data.file_name} 업로드 완료 (세션: ${sessionId})`;
-    $('btn-analyze').disabled = false;
-  } catch(e) { showStatus('file-status', `업로드 실패: ${e.message}`, 'error'); }
+await apiFetch(`/api/refilter/${sessionId}?${rfParams}`,{method:'POST'});
+const ffParams = new URLSearchParams({
+max_fret_speed:$('ff-speed').value,
+protect_long_notes_ms:$('ff-protect').value,
+});
+const ffResp = await apiFetch(`/api/fret-filter/${sessionId}?${ffParams}`,{method:'POST'});
+const ffData = await ffResp.json();
+const rpt = ffData.report ||{};
+currentEvents = (ffData.events || []).map((e,i) => ({...e,_idx:i}));
+$('note-count').textContent = currentEvents.length;
+prState.selectedNote = null;
+drawPR();
+$('ff-metrics').innerHTML = `
+<div class="metric"><div class="value">${rpt.original_count || 0}</div><div class="label">원본</div></div><div class="metric"><div class="value" style="color:var(--green)">${rpt.filtered_count || 0}</div><div class="label">유지</div></div><div class="metric"><div class="value" style="color:var(--red)">${rpt.removed_count || 0}</div><div class="label">제거</div></div>`;
+show($('ff-results'));
+if (tabData.length > 0){
+tabData = generateTabData(currentEvents);
+drawTab(tabData);
+$('tab-note-count').textContent = tabData.length;
 }
-
-// ─── Analyze ────────────────────────────────────────
-$('btn-analyze').onclick = async () => {
-  if (!sessionId) return;
-  $('btn-analyze').disabled = true;
-  showStatus('analyze-status', '오디오 분석 중...', 'loading'); show($('analyze-status'));
-  try {
-    const params = new URLSearchParams({
-      start_time: $('p-start').value||0, confidence_threshold: $('p-confidence').value,
-      min_note_duration_ms: $('p-mindur').value, sustain_ms: $('p-sustain').value, rake_sensitivity: $('p-rake').value,
-    });
-    if ($('p-end').value) params.append('end_time', $('p-end').value);
-    const resp = await apiFetch(`/api/analyze/${sessionId}?${params}`, { method:'POST' });
-    const data = await resp.json();
-    onAnalysisComplete(data);
-    showStatus('analyze-status', `${data.num_events}개 노트 감지됨`, 'success');
-    // Preload original audio for piano roll playback
-    loadOriginalAudioForPR();
-  } catch(e) { showStatus('analyze-status', e.message, 'error'); }
-  finally { $('btn-analyze').disabled = false; }
+}catch (e){console.warn('Auto fret filter error:',e);}
+finally{_ffPending = false;}
+},500);
+['ff-speed','ff-protect'].forEach(id =>{
+$(id).addEventListener('input',autoFretFilter);
+});
+$('crossfade-slider').oninput = function (){
+const v = parseFloat(this.value);
+$('cf-orig-pct').textContent = `${((1 - v) * 100).toFixed(0)}%`;
+$('cf-midi-pct').textContent = `${(v * 100).toFixed(0)}%`;
 };
-
-$('btn-refilter').onclick = async () => {
-  if (!sessionId) return;
-  $('btn-refilter').disabled = true;
-  showStatus('analyze-status', '재필터 적용 중...', 'loading'); show($('analyze-status'));
-  try {
-    const params = new URLSearchParams({
-      confidence_threshold: $('p-confidence').value, min_note_duration_ms: $('p-mindur').value, sustain_ms: $('p-sustain').value,
-    });
-    const resp = await apiFetch(`/api/refilter/${sessionId}?${params}`, { method:'POST' });
-    const data = await resp.json();
-    onAnalysisComplete(data);
-    showStatus('analyze-status', `재필터 완료: ${data.num_events}개 노트`, 'success');
-  } catch(e) { showStatus('analyze-status', e.message, 'error'); }
-  finally { $('btn-refilter').disabled = false; }
+const uploadZone = $('upload-zone'),fileInput = $('file-input');
+if (uploadZone){
+['dragenter','dragover'].forEach(e => uploadZone.addEventListener(e,ev =>{
+ev.preventDefault();
+if (uploadZone?.classList) uploadZone.classList.add('dragover');
+}));
+['dragleave','drop'].forEach(e => uploadZone.addEventListener(e,ev =>{
+ev.preventDefault();
+if (uploadZone?.classList) uploadZone.classList.remove('dragover');
+}));
+uploadZone.addEventListener('drop',ev =>{
+if (ev.dataTransfer.files[0]) uploadFile(ev.dataTransfer.files[0]);
+});
+}
+if (fileInput){
+fileInput.addEventListener('change',() =>{
+if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+}
+async function uploadFile(file){
+showStatus('file-status',`${file.name}업로드 중...`);show($('file-info'));
+const form = new FormData();form.append('file',file);
+try{
+const resp = await apiFetch('/api/upload',{method:'POST',body:form});
+const data = await resp.json();
+sessionId = data.session_id;
+$('file-status').className = 'status status-success';
+$('file-status').textContent = `${data.file_name}업로드 완료 (세션:${sessionId})`;
+$('btn-analyze').disabled = false;
+}catch (e){showStatus('file-status',`업로드 실패:${e.message}`,'error');}
+}
+$('btn-analyze').onclick = async () =>{
+if (!sessionId) return;
+$('btn-analyze').disabled = true;
+showStatus('analyze-status','오디오 분석 중...','loading');show($('analyze-status'));
+try{
+const params = new URLSearchParams({
+start_time:$('p-start').value || 0,confidence_threshold:$('p-confidence').value,
+min_note_duration_ms:$('p-mindur').value,sustain_ms:$('p-sustain').value,rake_sensitivity:$('p-rake').value,
+});
+if ($('p-end').value) params.append('end_time',$('p-end').value);
+const resp = await apiFetch(`/api/analyze/${sessionId}?${params}`,{method:'POST'});
+const data = await resp.json();
+onAnalysisComplete(data);
+showStatus('analyze-status',`${data.num_events}개 노트 감지됨`,'success');
+loadOriginalAudioForPR();
+}catch (e){showStatus('analyze-status',e.message,'error');}
+finally{$('btn-analyze').disabled = false;}
 };
-
-// ═══════════════════════════════════════════════════════
-// ═══ PIANO ROLL DAW ENGINE ════════════════════════════
-// ═══════════════════════════════════════════════════════
-
+$('btn-refilter').onclick = async () =>{
+if (!sessionId) return;
+$('btn-refilter').disabled = true;
+showStatus('analyze-status','재필터 적용 중...','loading');show($('analyze-status'));
+try{
+const params = new URLSearchParams({
+confidence_threshold:$('p-confidence').value,min_note_duration_ms:$('p-mindur').value,sustain_ms:$('p-sustain').value,
+});
+const resp = await apiFetch(`/api/refilter/${sessionId}?${params}`,{method:'POST'});
+const data = await resp.json();
+onAnalysisComplete(data);
+showStatus('analyze-status',`재필터 완료:${data.num_events}개 노트`,'success');
+}catch (e){showStatus('analyze-status',e.message,'error');}
+finally{$('btn-refilter').disabled = false;}
+};
 let currentEvents = [];
-let prState = {
-  zoomX: 1, zoomY: 1,
-  scrollX: 0, scrollY: 0,
-  mode: 'select',        // select | draw | erase
-  playing: false,
-  playStartTime: 0,
-  playOffset: 0,         // ms offset when play started
-  animFrame: null,
-  selectedNote: null,     // index into currentEvents
-  dragging: null,         // {type:'move'|'resize-l'|'resize-r', idx, startX, startY, origEvent}
-  drawPreview: null,      // {note, start} while drawing
-  // Computed bounds
-  minNote: 36, maxNote: 84, maxEndMs: 10000,
-  // Audio
-  audioBuffer: null,
-  audioContext: null,
-  audioSource: null,
+let prState ={
+zoomX:1,zoomY:1,
+scrollX:0,scrollY:0,
+mode:'select',// select | draw | erase
+playing:false,
+playStartTime:0,
+playOffset:0,// ms offset when play started
+animFrame:null,
+selectedNote:null,// index into currentEvents
+dragging:null,//{type:'move'|'resize-l'|'resize-r',idx,startX,startY,origEvent}
+drawPreview:null,//{note,start}while drawing
+minNote:36,maxNote:84,maxEndMs:10000,
+audioBuffer:null,
+audioContext:null,
+audioSource:null,
 };
-
 const PR_NOTE_H_BASE = 12;
-const PR_MS_PER_PX_BASE = 4; // 1px = 4ms at zoom 1
+const PR_MS_PER_PX_BASE = 4;// 1px = 4ms at zoom 1
 const PR_KEYS_W = 48;
-const SNAP_MS = 50; // 50ms snap grid
-
-function onAnalysisComplete(data) {
-  currentEvents = (data.events || []).map((e,i) => ({...e, _idx: i}));
-  $('note-count').textContent = data.num_events;
-  $('btn-refilter').disabled = false;
-  $('results-section').classList.add('active');
-
-  // Compute bounds
-  if (currentEvents.length) {
-    prState.minNote = 127; prState.maxNote = 0; prState.maxEndMs = 0;
-    currentEvents.forEach(e => {
-      if (e.note < prState.minNote) prState.minNote = e.note;
-      if (e.note > prState.maxNote) prState.maxNote = e.note;
-      if (e.end > prState.maxEndMs) prState.maxEndMs = e.end;
-    });
-    prState.minNote = Math.max(0, prState.minNote - 4);
-    prState.maxNote = Math.min(127, prState.maxNote + 4);
-    prState.maxEndMs = Math.max(prState.maxEndMs + 2000, 5000);
-  }
-
-  prState.selectedNote = null;
-  hideNotePopup();
-  prStopPlayback();
-  drawPR();
-
-  hide($('audio-mix')); hide($('audio-orig')); hide($('audio-midi'));
-  hide($('audio-adsr')); hide($('audio-pno'));
+const SNAP_MS = 50;// 50ms snap grid
+function onAnalysisComplete(data){
+if (!data){
+showStatus('analyze-status','Server returned empty response.','error');
+return;
 }
-
-// ─── Dimensions ─────────────────────────────────────
-function prNoteH() { return PR_NOTE_H_BASE * prState.zoomY; }
-function prMsPerPx() { return PR_MS_PER_PX_BASE / prState.zoomX; }
-function prNoteRange() { return prState.maxNote - prState.minNote + 1; }
-function prCanvasW() { return Math.max(800, prState.maxEndMs / prMsPerPx()); }
-function prCanvasH() { return prNoteRange() * prNoteH(); }
-
-// ─── Coordinate conversions ─────────────────────────
-function msToX(ms) { return ms / prMsPerPx(); }
-function xToMs(x) { return x * prMsPerPx(); }
-function noteToY(note) { return (prState.maxNote - note) * prNoteH(); }
-function yToNote(y) { return prState.maxNote - Math.floor(y / prNoteH()); }
-function snapMs(ms) { return $('pr-snap').checked ? Math.round(ms / SNAP_MS) * SNAP_MS : ms; }
-
-// ─── Draw ───────────────────────────────────────────
-function drawPR() {
-  const canvas = $('pr-canvas');
-  const scroll = $('pr-scroll');
-  const cW = prCanvasW();
-  const cH = prCanvasH();
-  const dpr = window.devicePixelRatio || 1;
-
-  canvas.width = cW * dpr;
-  canvas.height = cH * dpr;
-  canvas.style.width = cW + 'px';
-  canvas.style.height = cH + 'px';
-
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  const nh = prNoteH();
-  const nr = prNoteRange();
-
-  // Background
-  ctx.fillStyle = '#12121f';
-  ctx.fillRect(0, 0, cW, cH);
-
-  // Horizontal lines + black key shading
-  for (let n = prState.minNote; n <= prState.maxNote; n++) {
-    const y = noteToY(n);
-    const pc = n % 12;
-    if ([1,3,6,8,10].includes(pc)) {
-      ctx.fillStyle = 'rgba(255,255,255,0.025)';
-      ctx.fillRect(0, y, cW, nh);
-    }
-    ctx.strokeStyle = '#1e1e30';
-    ctx.lineWidth = (pc === 0) ? 1.5 : 0.5;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cW, y); ctx.stroke();
-  }
-
-  // Vertical grid (time)
-  const gridMs = prState.zoomX >= 2 ? 500 : (prState.zoomX >= 1 ? 1000 : 2000);
-  ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 0.5;
-  for (let ms = 0; ms <= prState.maxEndMs; ms += gridMs) {
-    const x = msToX(ms);
-    ctx.strokeStyle = (ms % (gridMs*4) === 0) ? '#2a2a44' : '#1a1a2e';
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cH); ctx.stroke();
-    // Time label
-    if (ms % (gridMs*2) === 0) {
-      ctx.fillStyle = '#444';
-      ctx.font = '10px monospace';
-      ctx.fillText(`${(ms/1000).toFixed(1)}s`, x+3, 10);
-    }
-  }
-
-  // Snap grid (finer)
-  if ($('pr-snap').checked && prState.zoomX >= 2) {
-    ctx.strokeStyle = 'rgba(108,92,231,0.07)'; ctx.lineWidth = 0.3;
-    for (let ms = 0; ms <= prState.maxEndMs; ms += SNAP_MS) {
-      const x = msToX(ms);
-      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cH); ctx.stroke();
-    }
-  }
-
-  // Note colors
-  const colors = {
-    normal:'#6c5ce7', hammer_on:'#fdcb6e', pull_off:'#fd79a8',
-    bend:'#00b894', vibrato:'#74b9ff', slide:'#a29bfe'
-  };
-  const safeColor = '#00b894';
-
-  // Draw notes
-  currentEvents.forEach((e, i) => {
-    const x = msToX(e.start);
-    const w = Math.max(3, msToX(e.end) - x);
-    const y = noteToY(e.note);
-    const h = nh - 1;
-
-    const isSelected = (prState.selectedNote === i);
-    const baseColor = (e.track === 'safe') ? safeColor : (colors[e.technique] || colors.normal);
-
-    // Fill
-    ctx.globalAlpha = isSelected ? 1 : (0.4 + (e.velocity / 127) * 0.55);
-    ctx.fillStyle = baseColor;
-    const r = Math.min(3, h/2);
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
-
-    // Border
-    ctx.globalAlpha = isSelected ? 1 : 0.6;
-    ctx.strokeStyle = isSelected ? '#fff' : baseColor;
-    ctx.lineWidth = isSelected ? 2 : 1;
-    ctx.stroke();
-
-    // Velocity bar (small indicator at left)
-    ctx.globalAlpha = 0.7;
-    ctx.fillStyle = '#fff';
-    const vBar = (e.velocity / 127) * (h - 4);
-    ctx.fillRect(x+1, y + h - vBar - 2, 2, vBar);
-
-    // Note name on larger notes
-    if (w > 30 && nh >= 10) {
-      ctx.globalAlpha = 0.8;
-      ctx.fillStyle = '#fff';
-      ctx.font = `${Math.min(10, nh-3)}px sans-serif`;
-      ctx.fillText(noteName(e.note), x+6, y+h-3);
-    }
-
-    ctx.globalAlpha = 1;
-
-    // Resize handles for selected
-    if (isSelected) {
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(x, y, 4, h); // left handle
-      ctx.fillRect(x+w-4, y, 4, h); // right handle
-    }
-  });
-
-  // Draw preview (when drawing new note)
-  if (prState.drawPreview) {
-    const dp = prState.drawPreview;
-    const x = msToX(dp.start);
-    const w = Math.max(3, msToX(dp.end || dp.start + 100) - x);
-    const y = noteToY(dp.note);
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = '#6c5ce7';
-    ctx.fillRect(x, y, w, nh-1);
-    ctx.globalAlpha = 1;
-  }
-
-  // Draw piano keys sidebar
-  drawPRKeys();
-
-  // Playhead
-  if (prState.playing || prState.playOffset > 0) {
-    drawPlayhead();
-  }
-}
-
-function drawPRKeys() {
-  const keysCanvas = $('pr-keys-canvas');
-  const nh = prNoteH();
-  const cH = prCanvasH();
-  const dpr = window.devicePixelRatio || 1;
-
-  keysCanvas.width = PR_KEYS_W * dpr;
-  keysCanvas.height = cH * dpr;
-  keysCanvas.style.width = PR_KEYS_W + 'px';
-  keysCanvas.style.height = cH + 'px';
-
-  const ctx = keysCanvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  ctx.fillStyle = '#0e0e1a';
-  ctx.fillRect(0, 0, PR_KEYS_W, cH);
-
-  for (let n = prState.minNote; n <= prState.maxNote; n++) {
-    const y = noteToY(n);
-    const pc = n % 12;
-    const isBlack = [1,3,6,8,10].includes(pc);
-
-    ctx.fillStyle = isBlack ? '#1a1a2a' : '#252538';
-    ctx.fillRect(0, y, PR_KEYS_W-1, nh-1);
-
-    ctx.strokeStyle = '#0e0e1a';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(PR_KEYS_W,y); ctx.stroke();
-
-    // Label
-    if (pc === 0 || nh >= 14) {
-      ctx.fillStyle = isBlack ? '#666' : '#999';
-      ctx.font = `${Math.min(10, nh-2)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(noteName(n), PR_KEYS_W/2, y + nh - 2);
-    }
-  }
-}
-
-// Sync scroll between keys and main canvas
-$('pr-scroll').addEventListener('scroll', function() {
-  $('pr-keys-canvas').style.marginTop = -this.scrollTop + 'px';
+currentEvents = (data.events || []).map((e,i) => ({...e,_idx:i}));
+if ($('note-count')) $('note-count').textContent = data.num_events || 0;
+if ($('btn-refilter')) $('btn-refilter').disabled = false;
+const resSec = $('results-section');
+if (resSec) resSec.classList.add('active');
+if (currentEvents.length){
+prState.minNote = 127;prState.maxNote = 0;prState.maxEndMs = 0;
+currentEvents.forEach(e =>{
+if (e.note < prState.minNote) prState.minNote = e.note;
+if (e.note > prState.maxNote) prState.maxNote = e.note;
+if (e.end > prState.maxEndMs) prState.maxEndMs = e.end;
 });
-
-// ─── Playhead ───────────────────────────────────────
-function drawPlayhead() {
-  const canvas = $('pr-canvas');
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const currentMs = getCurrentPlayMs();
-  const x = msToX(currentMs) * dpr;
-
-  // Draw line
-  ctx.save();
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.strokeStyle = '#ff4757';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-
-  // Triangle at top
-  ctx.fillStyle = '#ff4757';
-  ctx.beginPath(); ctx.moveTo(x-6, 0); ctx.lineTo(x+6, 0); ctx.lineTo(x, 10*dpr); ctx.fill();
-  ctx.restore();
+prState.minNote = Math.max(0,prState.minNote - 4);
+prState.maxNote = Math.min(127,prState.maxNote + 4);
+prState.maxEndMs = Math.max(prState.maxEndMs + 2000,5000);
 }
-
-function getCurrentPlayMs() {
-  if (prState.playing) {
-    return prState.playOffset + (performance.now() - prState.playStartTime);
-  }
-  return prState.playOffset;
+prState.selectedNote = null;
+hideNotePopup();
+prStopPlayback();
+drawPR();
+hide($('audio-mix'));hide($('audio-orig'));hide($('audio-midi'));
+hide($('audio-adsr'));hide($('audio-pno'));
 }
-
-function updateTimeDisplay() {
-  const ms = getCurrentPlayMs();
-  const totalMs = prState.maxEndMs;
-  const fmt = (m) => {
-    const s = Math.floor(m/1000);
-    const min = Math.floor(s/60);
-    const sec = s % 60;
-    const mss = Math.floor(m%1000);
-    return `${min}:${String(sec).padStart(2,'0')}.${String(mss).padStart(3,'0')}`;
-  };
-  const fmtShort = (m) => {
-    const s = Math.floor(m/1000);
-    return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-  };
-  $('pr-time').textContent = `${fmt(ms)} / ${fmtShort(totalMs)}`;
+function prNoteH(){return PR_NOTE_H_BASE * prState.zoomY;}
+function prMsPerPx(){return PR_MS_PER_PX_BASE / prState.zoomX;}
+function prNoteRange(){return prState.maxNote - prState.minNote + 1;}
+function prCanvasW(){return Math.max(800,prState.maxEndMs / prMsPerPx());}
+function prCanvasH(){return prNoteRange() * prNoteH();}
+function msToX(ms){return ms / prMsPerPx();}
+function xToMs(x){return x * prMsPerPx();}
+function noteToY(note){return (prState.maxNote - note) * prNoteH();}
+function yToNote(y){return prState.maxNote - Math.floor(y / prNoteH());}
+function snapMs(ms){return $('pr-snap').checked ? Math.round(ms / SNAP_MS) * SNAP_MS:ms;}
+function drawPR(){
+const canvas = $('pr-canvas');
+const scroll = $('pr-scroll');
+const cW = prCanvasW();
+const cH = prCanvasH();
+const dpr = window.devicePixelRatio || 1;
+canvas.width = cW * dpr;
+canvas.height = cH * dpr;
+canvas.style.width = cW + 'px';
+canvas.style.height = cH + 'px';
+const ctx = canvas.getContext('2d');
+ctx.setTransform(dpr,0,0,dpr,0,0);
+const nh = prNoteH();
+const nr = prNoteRange();
+ctx.fillStyle = '#12121f';
+ctx.fillRect(0,0,cW,cH);
+for (let n = prState.minNote;n <= prState.maxNote;n++){
+const y = noteToY(n);
+const pc = n % 12;
+if ([1,3,6,8,10].includes(pc)){
+ctx.fillStyle = 'rgba(255,255,255,0.025)';
+ctx.fillRect(0,y,cW,nh);
 }
-
-// ─── Playback ───────────────────────────────────────
+ctx.strokeStyle = '#1e1e30';
+ctx.lineWidth = (pc === 0) ? 1.5:0.5;
+ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cW,y);ctx.stroke();
+}
+const gridMs = prState.zoomX >= 2 ? 500:(prState.zoomX >= 1 ? 1000:2000);
+ctx.strokeStyle = '#1a1a2e';ctx.lineWidth = 0.5;
+for (let ms = 0;ms <= prState.maxEndMs;ms += gridMs){
+const x = msToX(ms);
+ctx.strokeStyle = (ms % (gridMs * 4) === 0) ? '#2a2a44':'#1a1a2e';
+ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cH);ctx.stroke();
+if (ms % (gridMs * 2) === 0){
+ctx.fillStyle = '#444';
+ctx.font = '10px monospace';
+ctx.fillText(`${(ms / 1000).toFixed(1)}s`,x + 3,10);
+}
+}
+if ($('pr-snap').checked && prState.zoomX >= 2){
+ctx.strokeStyle = 'rgba(108,92,231,0.07)';ctx.lineWidth = 0.3;
+for (let ms = 0;ms <= prState.maxEndMs;ms += SNAP_MS){
+const x = msToX(ms);
+ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cH);ctx.stroke();
+}
+}
+const colors ={
+normal:'#6c5ce7',hammer_on:'#fdcb6e',pull_off:'#fd79a8',
+bend:'#00b894',vibrato:'#74b9ff',slide:'#a29bfe'
+};
+const safeColor = '#00b894';
+currentEvents.forEach((e,i) =>{
+const x = msToX(e.start);
+const w = Math.max(3,msToX(e.end) - x);
+const y = noteToY(e.note);
+const h = nh - 1;
+const isSelected = (prState.selectedNote === i);
+const baseColor = (e.track === 'safe') ? safeColor:(colors[e.technique] || colors.normal);
+ctx.globalAlpha = isSelected ? 1:(0.4 + (e.velocity / 127) * 0.55);
+ctx.fillStyle = baseColor;
+const r = Math.min(3,h / 2);
+ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();
+ctx.globalAlpha = isSelected ? 1:0.6;
+ctx.strokeStyle = isSelected ? '#fff':baseColor;
+ctx.lineWidth = isSelected ? 2:1;
+ctx.stroke();
+ctx.globalAlpha = 0.7;
+ctx.fillStyle = '#fff';
+const vBar = (e.velocity / 127) * (h - 4);
+ctx.fillRect(x + 1,y + h - vBar - 2,2,vBar);
+if (w > 30 && nh >= 10){
+ctx.globalAlpha = 0.8;
+ctx.fillStyle = '#fff';
+ctx.font = `${Math.min(10,nh - 3)}px sans-serif`;
+ctx.fillText(noteName(e.note),x + 6,y + h - 3);
+}
+ctx.globalAlpha = 1;
+if (isSelected){
+ctx.fillStyle = '#fff';
+ctx.fillRect(x,y,4,h);// left handle
+ctx.fillRect(x + w - 4,y,4,h);// right handle
+}
+});
+if (prState.drawPreview){
+const dp = prState.drawPreview;
+const x = msToX(dp.start);
+const w = Math.max(3,msToX(dp.end || dp.start + 100) - x);
+const y = noteToY(dp.note);
+ctx.globalAlpha = 0.5;
+ctx.fillStyle = '#6c5ce7';
+ctx.fillRect(x,y,w,nh - 1);
+ctx.globalAlpha = 1;
+}
+drawPRKeys();
+if (prState.playing || prState.playOffset > 0){
+drawPlayhead();
+}
+}
+function drawPRKeys(){
+const keysCanvas = $('pr-keys-canvas');
+const nh = prNoteH();
+const cH = prCanvasH();
+const dpr = window.devicePixelRatio || 1;
+keysCanvas.width = PR_KEYS_W * dpr;
+keysCanvas.height = cH * dpr;
+keysCanvas.style.width = PR_KEYS_W + 'px';
+keysCanvas.style.height = cH + 'px';
+const ctx = keysCanvas.getContext('2d');
+ctx.setTransform(dpr,0,0,dpr,0,0);
+ctx.fillStyle = '#0e0e1a';
+ctx.fillRect(0,0,PR_KEYS_W,cH);
+for (let n = prState.minNote;n <= prState.maxNote;n++){
+const y = noteToY(n);
+const pc = n % 12;
+const isBlack = [1,3,6,8,10].includes(pc);
+ctx.fillStyle = isBlack ? '#1a1a2a':'#252538';
+ctx.fillRect(0,y,PR_KEYS_W - 1,nh - 1);
+ctx.strokeStyle = '#0e0e1a';
+ctx.lineWidth = 0.5;
+ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(PR_KEYS_W,y);ctx.stroke();
+if (pc === 0 || nh >= 14){
+ctx.fillStyle = isBlack ? '#666':'#999';
+ctx.font = `${Math.min(10,nh - 2)}px sans-serif`;
+ctx.textAlign = 'center';
+ctx.fillText(noteName(n),PR_KEYS_W / 2,y + nh - 2);
+}
+}
+}
+$('pr-scroll').addEventListener('scroll',function (){
+$('pr-keys-canvas').style.marginTop = -this.scrollTop + 'px';
+});
+function drawPlayhead(){
+const canvas = $('pr-canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+const currentMs = getCurrentPlayMs();
+const x = msToX(currentMs) * dpr;
+ctx.save();
+ctx.setTransform(1,0,0,1,0,0);
+ctx.strokeStyle = '#ff4757';
+ctx.lineWidth = 2;
+ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();
+ctx.fillStyle = '#ff4757';
+ctx.beginPath();ctx.moveTo(x - 6,0);ctx.lineTo(x + 6,0);ctx.lineTo(x,10 * dpr);ctx.fill();
+ctx.restore();
+}
+function getCurrentPlayMs(){
+if (prState.playing){
+return prState.playOffset + (performance.now() - prState.playStartTime);
+}
+return prState.playOffset;
+}
+function updateTimeDisplay(){
+const ms = getCurrentPlayMs();
+const totalMs = prState.maxEndMs;
+const fmt = (m) =>{
+const s = Math.floor(m / 1000);
+const min = Math.floor(s / 60);
+const sec = s % 60;
+const mss = Math.floor(m % 1000);
+return `${min}:${String(sec).padStart(2,'0')}.${String(mss).padStart(3,'0')}`;
+};
+const fmtShort = (m) =>{
+const s = Math.floor(m / 1000);
+return `${Math.floor(s / 60)}:${String(s % 60).padStart(2,'0')}`;
+};
+$('pr-time').textContent = `${fmt(ms)}/ ${fmtShort(totalMs)}`;
+}
 let prAudioCtx = null;
 let prAudioBuffer = null;
 let prAudioSource = null;
-
-function loadOriginalAudioForPR() {
-  if (!sessionId) return;
-  fetch(`/api/original-wav/${sessionId}`)
-    .then(r => r.arrayBuffer())
-    .then(buf => {
-      if (!prAudioCtx) prAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      return prAudioCtx.decodeAudioData(buf);
-    })
-    .then(decoded => { prAudioBuffer = decoded; })
-    .catch(e => console.warn('Failed to load audio for PR', e));
+function loadOriginalAudioForPR(){
+if (!sessionId) return;
+fetch(`/api/original-wav/${sessionId}`)
+.then(r => r.arrayBuffer())
+.then(buf =>{
+if (!prAudioCtx) prAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+return prAudioCtx.decodeAudioData(buf);
+})
+.then(decoded =>{prAudioBuffer = decoded;})
+.catch(e => console.warn('Failed to load audio for PR',e));
 }
-
-function prStartPlayback() {
-  if (prState.playing) return;
-  prState.playing = true;
-  prState.playStartTime = performance.now();
-  $('pr-play').innerHTML = '&#10074;&#10074; 일시정지';
-
-  // Start audio
-  if (prAudioBuffer && prAudioCtx) {
-    prAudioSource = prAudioCtx.createBufferSource();
-    prAudioSource.buffer = prAudioBuffer;
-    prAudioSource.connect(prAudioCtx.destination);
-    prAudioSource.start(0, prState.playOffset / 1000);
-    prAudioSource.onended = () => {
-      if (prState.playing) prStopPlayback();
-    };
-  }
-
-  function animate() {
-    if (!prState.playing) return;
-    drawPR();
-    updateTimeDisplay();
-    // Auto-scroll to follow playhead
-    const scroll = $('pr-scroll');
-    const phX = msToX(getCurrentPlayMs());
-    const visLeft = scroll.scrollLeft;
-    const visRight = visLeft + scroll.clientWidth;
-    if (phX > visRight - 50 || phX < visLeft) {
-      scroll.scrollLeft = phX - 100;
-    }
-    prState.animFrame = requestAnimationFrame(animate);
-  }
-  animate();
+function prStartPlayback(){
+if (prState.playing) return;
+prState.playing = true;
+prState.playStartTime = performance.now();
+$('pr-play').innerHTML = '&#10074;&#10074;일시정지';
+if (prAudioBuffer && prAudioCtx){
+prAudioSource = prAudioCtx.createBufferSource();
+prAudioSource.buffer = prAudioBuffer;
+prAudioSource.connect(prAudioCtx.destination);
+prAudioSource.start(0,prState.playOffset / 1000);
+prAudioSource.onended = () =>{
+if (prState.playing) prStopPlayback();
+};
 }
-
-function prPausePlayback() {
-  if (!prState.playing) return;
-  prState.playOffset = getCurrentPlayMs();
-  prState.playing = false;
-  $('pr-play').innerHTML = '&#9654; 재생';
-  if (prState.animFrame) cancelAnimationFrame(prState.animFrame);
-  if (prAudioSource) { try { prAudioSource.stop(); } catch(e){} prAudioSource = null; }
-  drawPR();
-  updateTimeDisplay();
+function animate(){
+if (!prState.playing) return;
+drawPR();
+updateTimeDisplay();
+const scroll = $('pr-scroll');
+const phX = msToX(getCurrentPlayMs());
+const visLeft = scroll.scrollLeft;
+const visRight = visLeft + scroll.clientWidth;
+if (phX > visRight - 50 || phX < visLeft){
+scroll.scrollLeft = phX - 100;
 }
-
-function prStopPlayback() {
-  prState.playing = false;
-  prState.playOffset = 0;
-  $('pr-play').innerHTML = '&#9654; 재생';
-  if (prState.animFrame) cancelAnimationFrame(prState.animFrame);
-  if (prAudioSource) { try { prAudioSource.stop(); } catch(e){} prAudioSource = null; }
-  drawPR();
-  updateTimeDisplay();
+prState.animFrame = requestAnimationFrame(animate);
 }
-
-$('pr-play').onclick = () => {
-  if (prState.playing) prPausePlayback();
-  else prStartPlayback();
+animate();
+}
+function prPausePlayback(){
+if (!prState.playing) return;
+prState.playOffset = getCurrentPlayMs();
+prState.playing = false;
+$('pr-play').innerHTML = '&#9654;재생';
+if (prState.animFrame) cancelAnimationFrame(prState.animFrame);
+if (prAudioSource){try{prAudioSource.stop();}catch (e){}prAudioSource = null;}
+drawPR();
+updateTimeDisplay();
+}
+function prStopPlayback(){
+prState.playing = false;
+prState.playOffset = 0;
+$('pr-play').innerHTML = '&#9654;재생';
+if (prState.animFrame) cancelAnimationFrame(prState.animFrame);
+if (prAudioSource){try{prAudioSource.stop();}catch (e){}prAudioSource = null;}
+drawPR();
+updateTimeDisplay();
+}
+$('pr-play').onclick = () =>{
+if (prState.playing) prPausePlayback();
+else prStartPlayback();
 };
 $('pr-stop').onclick = () => prStopPlayback();
-
-// ─── Zoom controls ──────────────────────────────────
-$('pr-zoom-x').oninput = function() { prState.zoomX = parseFloat(this.value); drawPR(); };
-$('pr-zoom-y').oninput = function() { prState.zoomY = parseFloat(this.value); drawPR(); };
-
-// Mouse wheel zoom
-$('pr-scroll').addEventListener('wheel', function(e) {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.15 : 0.15;
-    if (e.shiftKey) {
-      prState.zoomY = Math.max(0.5, Math.min(4, prState.zoomY + delta));
-      $('pr-zoom-y').value = prState.zoomY;
-    } else {
-      prState.zoomX = Math.max(0.5, Math.min(8, prState.zoomX + delta));
-      $('pr-zoom-x').value = prState.zoomX;
-    }
-    drawPR();
-  }
-}, { passive: false });
-
-// ─── Mode switching ─────────────────────────────────
-document.querySelectorAll('.pr-mode').forEach(btn => {
-  btn.onclick = function() {
-    document.querySelectorAll('.pr-mode').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-    prState.mode = this.dataset.mode;
-    const scroll = $('pr-scroll');
-    scroll.className = 'pr-scroll mode-' + prState.mode;
-  };
+$('pr-zoom-x').oninput = function (){prState.zoomX = parseFloat(this.value);drawPR();};
+$('pr-zoom-y').oninput = function (){prState.zoomY = parseFloat(this.value);drawPR();};
+$('pr-scroll').addEventListener('wheel',function (e){
+if (e.ctrlKey || e.metaKey){
+e.preventDefault();
+const delta = e.deltaY > 0 ? -0.15:0.15;
+if (e.shiftKey){
+prState.zoomY = Math.max(0.5,Math.min(4,prState.zoomY + delta));
+$('pr-zoom-y').value = prState.zoomY;
+}else{
+prState.zoomX = Math.max(0.5,Math.min(8,prState.zoomX + delta));
+$('pr-zoom-x').value = prState.zoomX;
+}
+drawPR();
+}
+},{passive:false});
+document.querySelectorAll('.pr-mode').forEach(btn =>{
+btn.onclick = function (){
+document.querySelectorAll('.pr-mode').forEach(b => b.classList.remove('active'));
+this.classList.add('active');
+prState.mode = this.dataset.mode;
+const scroll = $('pr-scroll');
+scroll.className = 'pr-scroll mode-' + prState.mode;
+};
 });
-
-// ─── Mouse interaction on canvas ────────────────────
 const prCanvas = $('pr-canvas');
 const prScroll = $('pr-scroll');
-
-function getCanvasPos(e) {
-  const rect = prCanvas.getBoundingClientRect();
-  const scaleX = prCanvas.clientWidth / parseFloat(prCanvas.style.width || prCanvas.clientWidth);
-  return {
-    x: (e.clientX - rect.left) / scaleX,
-    y: (e.clientY - rect.top) / scaleX,
-  };
-}
-
-function findNoteAt(x, y) {
-  const ms = xToMs(x);
-  const note = yToNote(y);
-  const nh = prNoteH();
-  for (let i = currentEvents.length - 1; i >= 0; i--) {
-    const e = currentEvents[i];
-    if (e.note === note && ms >= e.start && ms <= e.end) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-function isOnLeftHandle(x, idx) {
-  const e = currentEvents[idx];
-  return Math.abs(x - msToX(e.start)) < 6;
-}
-function isOnRightHandle(x, idx) {
-  const e = currentEvents[idx];
-  return Math.abs(x - msToX(e.end)) < 6;
-}
-
-prCanvas.addEventListener('mousedown', function(e) {
-  const pos = getCanvasPos(e);
-  const ms = xToMs(pos.x);
-  const note = yToNote(pos.y);
-
-  if (prState.mode === 'select') {
-    const idx = findNoteAt(pos.x, pos.y);
-    if (idx >= 0) {
-      prState.selectedNote = idx;
-      // Check handles
-      if (isOnLeftHandle(pos.x, idx)) {
-        prState.dragging = { type:'resize-l', idx, startX:pos.x, orig:{...currentEvents[idx]} };
-      } else if (isOnRightHandle(pos.x, idx)) {
-        prState.dragging = { type:'resize-r', idx, startX:pos.x, orig:{...currentEvents[idx]} };
-      } else {
-        prState.dragging = { type:'move', idx, startX:pos.x, startY:pos.y, orig:{...currentEvents[idx]} };
-      }
-      drawPR();
-    } else {
-      prState.selectedNote = null;
-      // Click on empty = set playhead
-      prState.playOffset = Math.max(0, snapMs(ms));
-      if (prState.playing) {
-        prPausePlayback();
-        prStartPlayback();
-      }
-      hideNotePopup();
-      drawPR();
-      updateTimeDisplay();
-    }
-  }
-  else if (prState.mode === 'draw') {
-    const startMs = snapMs(Math.max(0, ms));
-    prState.drawPreview = { note: note, start: startMs, end: startMs + 100 };
-    prState.dragging = { type:'draw', startX: pos.x };
-    drawPR();
-  }
-  else if (prState.mode === 'erase') {
-    const idx = findNoteAt(pos.x, pos.y);
-    if (idx >= 0) {
-      currentEvents.splice(idx, 1);
-      prState.selectedNote = null;
-      $('note-count').textContent = currentEvents.length;
-      drawPR();
-    }
-  }
-});
-
-prCanvas.addEventListener('mousemove', function(e) {
-  if (!prState.dragging) {
-    // Cursor change for handles
-    if (prState.mode === 'select') {
-      const pos = getCanvasPos(e);
-      const idx = findNoteAt(pos.x, pos.y);
-      if (idx >= 0 && (isOnLeftHandle(pos.x, idx) || isOnRightHandle(pos.x, idx))) {
-        prCanvas.style.cursor = 'ew-resize';
-      } else if (idx >= 0) {
-        prCanvas.style.cursor = 'grab';
-      } else {
-        prCanvas.style.cursor = 'default';
-      }
-    }
-    return;
-  }
-
-  const pos = getCanvasPos(e);
-  const dx = pos.x - prState.dragging.startX;
-
-  if (prState.dragging.type === 'move') {
-    const orig = prState.dragging.orig;
-    const dy = pos.y - prState.dragging.startY;
-    const newNote = yToNote(noteToY(orig.note) + dy);
-    const deltaMs = xToMs(dx);
-    const newStart = snapMs(Math.max(0, orig.start + deltaMs));
-    const dur = orig.end - orig.start;
-    currentEvents[prState.dragging.idx].start = newStart;
-    currentEvents[prState.dragging.idx].end = newStart + dur;
-    currentEvents[prState.dragging.idx].note = Math.max(0, Math.min(127, newNote));
-    drawPR();
-  }
-  else if (prState.dragging.type === 'resize-l') {
-    const orig = prState.dragging.orig;
-    const deltaMs = xToMs(dx);
-    const newStart = snapMs(Math.max(0, Math.min(orig.end - 10, orig.start + deltaMs)));
-    currentEvents[prState.dragging.idx].start = newStart;
-    drawPR();
-  }
-  else if (prState.dragging.type === 'resize-r') {
-    const orig = prState.dragging.orig;
-    const deltaMs = xToMs(dx);
-    const newEnd = snapMs(Math.max(orig.start + 10, orig.end + deltaMs));
-    currentEvents[prState.dragging.idx].end = newEnd;
-    drawPR();
-  }
-  else if (prState.dragging.type === 'draw') {
-    const endMs = snapMs(Math.max(0, xToMs(pos.x)));
-    if (prState.drawPreview) {
-      prState.drawPreview.end = Math.max(prState.drawPreview.start + SNAP_MS, endMs);
-    }
-    drawPR();
-  }
-});
-
-window.addEventListener('mouseup', function(e) {
-  if (prState.dragging) {
-    if (prState.dragging.type === 'draw' && prState.drawPreview) {
-      // Finalize new note
-      const dp = prState.drawPreview;
-      if (dp.end - dp.start >= 20) {
-        currentEvents.push({
-          note: dp.note,
-          start: Math.min(dp.start, dp.end),
-          end: Math.max(dp.start, dp.end),
-          velocity: 80,
-          track: 'main',
-          technique: 'normal',
-        });
-        $('note-count').textContent = currentEvents.length;
-        prState.maxEndMs = Math.max(prState.maxEndMs, dp.end + 2000);
-      }
-      prState.drawPreview = null;
-    }
-    // Show popup for select mode
-    if (prState.dragging.type === 'move' && prState.selectedNote !== null) {
-      const scrollRect = prScroll.getBoundingClientRect();
-      const ev = currentEvents[prState.selectedNote];
-      const px = msToX(ev.start) - prScroll.scrollLeft + scrollRect.left;
-      const py = noteToY(ev.note) - prScroll.scrollTop + scrollRect.top;
-      // Only show if it was a click (not a drag)
-      const dx2 = e.clientX - prState.dragging.startX;
-      // We skip popup if dragged significantly
-    }
-    prState.dragging = null;
-    drawPR();
-  }
-});
-
-// Double-click to open editor
-prCanvas.addEventListener('dblclick', function(e) {
-  const pos = getCanvasPos(e);
-  const idx = findNoteAt(pos.x, pos.y);
-  if (idx >= 0) {
-    prState.selectedNote = idx;
-    drawPR();
-    showNotePopup(idx, e.clientX, e.clientY);
-  }
-});
-
-// ─── Note editor popup ─────────────────────────────
-function showNotePopup(idx, cx, cy) {
-  const ev = currentEvents[idx];
-  const popup = $('note-popup');
-  $('np-note').value = ev.note;
-  $('np-vel').value = ev.velocity;
-  $('np-start').value = Math.round(ev.start);
-  $('np-end').value = Math.round(ev.end);
-  $('np-name').textContent = noteName(ev.note);
-
-  popup.style.left = Math.min(cx, window.innerWidth - 220) + 'px';
-  popup.style.top = Math.min(cy + 10, window.innerHeight - 200) + 'px';
-  show(popup);
-}
-
-function hideNotePopup() { hide($('note-popup')); }
-
-$('np-note').oninput = function() { $('np-name').textContent = noteName(parseInt(this.value)||0); };
-
-$('np-save').onclick = () => {
-  if (prState.selectedNote === null) return;
-  const ev = currentEvents[prState.selectedNote];
-  ev.note = Math.max(0, Math.min(127, parseInt($('np-note').value)||60));
-  ev.velocity = Math.max(1, Math.min(127, parseInt($('np-vel').value)||80));
-  ev.start = Math.max(0, parseInt($('np-start').value)||0);
-  ev.end = Math.max(ev.start+10, parseInt($('np-end').value)||0);
-  hideNotePopup();
-  drawPR();
+function getCanvasPos(e){
+const rect = prCanvas.getBoundingClientRect();
+const scaleX = prCanvas.clientWidth / parseFloat(prCanvas.style.width || prCanvas.clientWidth);
+return{
+x:(e.clientX - rect.left) / scaleX,
+y:(e.clientY - rect.top) / scaleX,
 };
-
-$('np-delete').onclick = () => {
-  if (prState.selectedNote === null) return;
-  currentEvents.splice(prState.selectedNote, 1);
-  prState.selectedNote = null;
-  $('note-count').textContent = currentEvents.length;
-  hideNotePopup();
-  drawPR();
+}
+function findNoteAt(x,y){
+const ms = xToMs(x);
+const note = yToNote(y);
+const nh = prNoteH();
+for (let i = currentEvents.length - 1;i >= 0;i--){
+const e = currentEvents[i];
+if (e.note === note && ms >= e.start && ms <= e.end){
+return i;
+}
+}
+return -1;
+}
+function isOnLeftHandle(x,idx){
+const e = currentEvents[idx];
+return Math.abs(x - msToX(e.start)) < 6;
+}
+function isOnRightHandle(x,idx){
+const e = currentEvents[idx];
+return Math.abs(x - msToX(e.end)) < 6;
+}
+prCanvas.addEventListener('mousedown',function (e){
+const pos = getCanvasPos(e);
+const ms = xToMs(pos.x);
+const note = yToNote(pos.y);
+if (prState.mode === 'select'){
+const idx = findNoteAt(pos.x,pos.y);
+if (idx >= 0){
+prState.selectedNote = idx;
+if (isOnLeftHandle(pos.x,idx)){
+prState.dragging ={type:'resize-l',idx,startX:pos.x,orig:{...currentEvents[idx]}};
+}else if (isOnRightHandle(pos.x,idx)){
+prState.dragging ={type:'resize-r',idx,startX:pos.x,orig:{...currentEvents[idx]}};
+}else{
+prState.dragging ={type:'move',idx,startX:pos.x,startY:pos.y,orig:{...currentEvents[idx]}};
+}
+drawPR();
+}else{
+prState.selectedNote = null;
+prState.playOffset = Math.max(0,snapMs(ms));
+if (prState.playing){
+prPausePlayback();
+prStartPlayback();
+}
+hideNotePopup();
+drawPR();
+updateTimeDisplay();
+}
+}
+else if (prState.mode === 'draw'){
+const startMs = snapMs(Math.max(0,ms));
+prState.drawPreview ={note:note,start:startMs,end:startMs + 100};
+prState.dragging ={type:'draw',startX:pos.x};
+drawPR();
+}
+else if (prState.mode === 'erase'){
+const idx = findNoteAt(pos.x,pos.y);
+if (idx >= 0){
+currentEvents.splice(idx,1);
+prState.selectedNote = null;
+$('note-count').textContent = currentEvents.length;
+drawPR();
+}
+}
+});
+prCanvas.addEventListener('mousemove',function (e){
+if (!prState.dragging){
+if (prState.mode === 'select'){
+const pos = getCanvasPos(e);
+const idx = findNoteAt(pos.x,pos.y);
+if (idx >= 0 && (isOnLeftHandle(pos.x,idx) || isOnRightHandle(pos.x,idx))){
+prCanvas.style.cursor = 'ew-resize';
+}else if (idx >= 0){
+prCanvas.style.cursor = 'grab';
+}else{
+prCanvas.style.cursor = 'default';
+}
+}
+return;
+}
+const pos = getCanvasPos(e);
+const dx = pos.x - prState.dragging.startX;
+if (prState.dragging.type === 'move'){
+const orig = prState.dragging.orig;
+const dy = pos.y - prState.dragging.startY;
+const newNote = yToNote(noteToY(orig.note) + dy);
+const deltaMs = xToMs(dx);
+const newStart = snapMs(Math.max(0,orig.start + deltaMs));
+const dur = orig.end - orig.start;
+currentEvents[prState.dragging.idx].start = newStart;
+currentEvents[prState.dragging.idx].end = newStart + dur;
+currentEvents[prState.dragging.idx].note = Math.max(0,Math.min(127,newNote));
+drawPR();
+}
+else if (prState.dragging.type === 'resize-l'){
+const orig = prState.dragging.orig;
+const deltaMs = xToMs(dx);
+const newStart = snapMs(Math.max(0,Math.min(orig.end - 10,orig.start + deltaMs)));
+currentEvents[prState.dragging.idx].start = newStart;
+drawPR();
+}
+else if (prState.dragging.type === 'resize-r'){
+const orig = prState.dragging.orig;
+const deltaMs = xToMs(dx);
+const newEnd = snapMs(Math.max(orig.start + 10,orig.end + deltaMs));
+currentEvents[prState.dragging.idx].end = newEnd;
+drawPR();
+}
+else if (prState.dragging.type === 'draw'){
+const endMs = snapMs(Math.max(0,xToMs(pos.x)));
+if (prState.drawPreview){
+prState.drawPreview.end = Math.max(prState.drawPreview.start + SNAP_MS,endMs);
+}
+drawPR();
+}
+});
+window.addEventListener('mouseup',function (e){
+if (prState.dragging){
+if (prState.dragging.type === 'draw' && prState.drawPreview){
+const dp = prState.drawPreview;
+if (dp.end - dp.start >= 20){
+currentEvents.push({
+note:dp.note,
+start:Math.min(dp.start,dp.end),
+end:Math.max(dp.start,dp.end),
+velocity:80,
+track:'main',
+technique:'normal',
+});
+$('note-count').textContent = currentEvents.length;
+prState.maxEndMs = Math.max(prState.maxEndMs,dp.end + 2000);
+}
+prState.drawPreview = null;
+}
+if (prState.dragging.type === 'move' && prState.selectedNote !== null){
+const scrollRect = prScroll.getBoundingClientRect();
+const ev = currentEvents[prState.selectedNote];
+const px = msToX(ev.start) - prScroll.scrollLeft + scrollRect.left;
+const py = noteToY(ev.note) - prScroll.scrollTop + scrollRect.top;
+const dx2 = e.clientX - prState.dragging.startX;
+}
+prState.dragging = null;
+drawPR();
+}
+});
+prCanvas.addEventListener('dblclick',function (e){
+const pos = getCanvasPos(e);
+const idx = findNoteAt(pos.x,pos.y);
+if (idx >= 0){
+prState.selectedNote = idx;
+drawPR();
+showNotePopup(idx,e.clientX,e.clientY);
+}
+});
+function showNotePopup(idx,cx,cy){
+const ev = currentEvents[idx];
+const popup = $('note-popup');
+$('np-note').value = ev.note;
+$('np-vel').value = ev.velocity;
+$('np-start').value = Math.round(ev.start);
+$('np-end').value = Math.round(ev.end);
+$('np-name').textContent = noteName(ev.note);
+popup.style.left = Math.min(cx,window.innerWidth - 220) + 'px';
+popup.style.top = Math.min(cy + 10,window.innerHeight - 200) + 'px';
+show(popup);
+}
+function hideNotePopup(){hide($('note-popup'));}
+$('np-note').oninput = function (){$('np-name').textContent = noteName(parseInt(this.value) || 0);};
+$('np-save').onclick = () =>{
+if (prState.selectedNote === null) return;
+const ev = currentEvents[prState.selectedNote];
+ev.note = Math.max(0,Math.min(127,parseInt($('np-note').value) || 60));
+ev.velocity = Math.max(1,Math.min(127,parseInt($('np-vel').value) || 80));
+ev.start = Math.max(0,parseInt($('np-start').value) || 0);
+ev.end = Math.max(ev.start + 10,parseInt($('np-end').value) || 0);
+hideNotePopup();
+drawPR();
 };
-
+$('np-delete').onclick = () =>{
+if (prState.selectedNote === null) return;
+currentEvents.splice(prState.selectedNote,1);
+prState.selectedNote = null;
+$('note-count').textContent = currentEvents.length;
+hideNotePopup();
+drawPR();
+};
 $('np-cancel').onclick = () => hideNotePopup();
-
-// ─── Keyboard shortcuts ─────────────────────────────
-document.addEventListener('keydown', function(e) {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (e.code === 'Space') { e.preventDefault(); $('pr-play').click(); }
-  if (e.code === 'Delete' || e.code === 'Backspace') {
-    if (prState.selectedNote !== null) {
-      currentEvents.splice(prState.selectedNote, 1);
-      prState.selectedNote = null;
-      $('note-count').textContent = currentEvents.length;
-      hideNotePopup(); drawPR();
-    }
-  }
-  if (e.code === 'Escape') { prState.selectedNote = null; hideNotePopup(); drawPR(); }
-  if (e.code === 'KeyS') { document.querySelector('.pr-mode[data-mode="select"]').click(); }
-  if (e.code === 'KeyD') { document.querySelector('.pr-mode[data-mode="draw"]').click(); }
-  if (e.code === 'KeyE') { document.querySelector('.pr-mode[data-mode="erase"]').click(); }
-});
-
-// ─── Resize ─────────────────────────────────────────
-window.addEventListener('resize', () => { if (currentEvents.length) drawPR(); });
-
-// ═══ END PIANO ROLL ═════════════════════════════════
-
-// ─── Download MIDI ──────────────────────────────────
-$('btn-download-midi').onclick = () => {
-  if (!sessionId) return;
-  window.open(`/api/midi/${sessionId}`, '_blank');
-};
-
-// ─── Audio Players ──────────────────────────────────
-$('btn-play-orig').onclick = async () => {
-  const el = $('audio-orig');
-  if (!el.classList.contains('hidden')) { hide(el); return; }
-  el.src = `/api/original-wav/${sessionId}`; show(el);
-};
-$('btn-play-midi').onclick = async () => {
-  const el = $('audio-midi');
-  if (!el.classList.contains('hidden')) { hide(el); return; }
-  el.src = `/api/midi-wav/${sessionId}`; show(el);
-};
-
-// ─── Crossfader ─────────────────────────────────────
-$('btn-crossfade').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-crossfade'); btn.disabled = true; btn.textContent = '믹싱 중...';
-  try {
-    const cf = $('crossfade-slider').value;
-    const resp = await apiFetch(`/api/crossfade/${sessionId}?crossfade=${cf}`, { method:'POST' });
-    const blob = await resp.blob();
-    $('audio-mix').src = URL.createObjectURL(blob); show($('audio-mix'));
-  } catch(e) { alert('크로스페이드 실패: ' + e.message); }
-  finally { btn.disabled = false; btn.textContent = '믹스 생성'; }
-};
-
-// ─── ADSR Synth ─────────────────────────────────────
-const presetInfo = { nylon:'A:5ms D:80ms S:0.6 R:200ms | Triangle', steel:'A:3ms D:60ms S:0.5 R:150ms | Sawtooth', electric_clean:'A:5ms D:40ms S:0.7 R:100ms | Sawtooth', electric_overdrive:'A:2ms D:30ms S:0.8 R:300ms | Square', muted:'A:2ms D:20ms S:0.2 R:30ms | Sawtooth' };
-$('adsr-preset').onchange = function() { $('adsr-preset-info').textContent = presetInfo[this.value]||''; };
-$('adsr-preset').dispatchEvent(new Event('change'));
-
-$('btn-adsr-synth').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-adsr-synth'); btn.disabled = true;
-  showStatus('adsr-status', 'ADSR 합성 중...', 'loading'); show($('adsr-status'));
-  try {
-    const params = new URLSearchParams({ preset: $('adsr-preset').value, envelope_match: $('adsr-envelope-match').checked });
-    const resp = await apiFetch(`/api/adsr-synth/${sessionId}?${params}`, { method:'POST' });
-    const data = await resp.json();
-    const bytes = atob(data.wav_base64); const arr = new Uint8Array(bytes.length);
-    for (let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
-    $('audio-adsr').src = URL.createObjectURL(new Blob([arr],{type:'audio/wav'})); show($('audio-adsr'));
-    let msg = 'ADSR 합성 완료!';
-    if (data.envelope_params) { const ep=data.envelope_params; msg+=` (A:${ep.attack_ms}ms D:${ep.decay_ms}ms S:${ep.sustain_level} R:${ep.release_ms}ms)`; }
-    showStatus('adsr-status', msg, 'success');
-  } catch(e) { showStatus('adsr-status', e.message, 'error'); }
-  finally { btn.disabled = false; }
-};
-
-// ─── Reverse Analysis ───────────────────────────────
-$('btn-reverse').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-reverse'); btn.disabled = true;
-  showStatus('reverse-status', '역분석 실행 중...', 'loading'); show($('reverse-status'));
-  try {
-    const resp = await apiFetch(`/api/reverse-analysis/${sessionId}`, { method:'POST' }); const data = await resp.json();
-    $('reverse-metrics').innerHTML = `
-      <div class="metric"><div class="value">${(data.note_accuracy*100).toFixed(1)}%</div><div class="label">음정</div></div>
-      <div class="metric"><div class="value">${(data.pitch_accuracy*100).toFixed(1)}%</div><div class="label">피치</div></div>
-      <div class="metric"><div class="value">${(data.timing_accuracy*100).toFixed(1)}%</div><div class="label">타이밍</div></div>`;
-    show($('reverse-results'));
-    showStatus('reverse-status', `원본: ${data.original_notes} → 역변환: ${data.reversed_notes}개 노트`, 'success');
-  } catch(e) { showStatus('reverse-status', e.message, 'error'); }
-  finally { btn.disabled = false; }
-};
-
-// ─── Auto Match ─────────────────────────────────────
-$('btn-automatch').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-automatch'); btn.disabled = true;
-  showStatus('automatch-status', '자동 매칭 중...', 'loading'); show($('automatch-status'));
-  try {
-    const resp = await apiFetch(`/api/auto-match/${sessionId}`, { method:'POST' }); const data = await resp.json();
-    $('automatch-results').innerHTML = `
-      <div class="grid-4">
-        <div class="metric"><div class="value">${data.score?(data.score*100).toFixed(1)+'%':'N/A'}</div><div class="label">점수</div></div>
-        <div class="metric"><div class="value">${data.confidence_threshold?.toFixed(2)||'N/A'}</div><div class="label">신뢰도</div></div>
-        <div class="metric"><div class="value">${data.min_note_duration_ms||'N/A'}</div><div class="label">최소 길이</div></div>
-        <div class="metric"><div class="value">${data.sustain_ms||'N/A'}</div><div class="label">서스테인</div></div>
-      </div>
-      <button class="btn btn-green btn-full btn-sm" style="margin-top:12px" onclick="applyAutoMatch(${data.confidence_threshold},${data.min_note_duration_ms},${data.sustain_ms})">파라미터 적용</button>`;
-    show($('automatch-results'));
-    showStatus('automatch-status', '자동 매칭 완료!', 'success');
-  } catch(e) { showStatus('automatch-status', e.message, 'error'); }
-  finally { btn.disabled = false; }
-};
-function applyAutoMatch(c,d,s) {
-  $('p-confidence').value=c; document.querySelector('#v-confidence').textContent=c.toFixed(2);
-  $('p-mindur').value=d; document.querySelector('#v-mindur').textContent=d;
-  $('p-sustain').value=s; document.querySelector('#v-sustain').textContent=s;
-  $('btn-refilter').click();
+document.addEventListener('keydown',function (e){
+if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+if (e.code === 'Space'){e.preventDefault();$('pr-play').click();}
+if (e.code === 'Delete' || e.code === 'Backspace'){
+if (prState.selectedNote !== null){
+currentEvents.splice(prState.selectedNote,1);
+prState.selectedNote = null;
+$('note-count').textContent = currentEvents.length;
+hideNotePopup();drawPR();
 }
-
-// ─── Effect Learning Loop ───────────────────────────
-(async()=>{try{
-  const r=await apiFetch('/api/presets');const d=await r.json();const sel=$('effect-preset');
-  (d.effect_presets||['clean']).forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
-}catch(e){console.warn(e);}})();
-
-$('btn-effect-loop').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-effect-loop'); btn.disabled = true;
-  showStatus('effect-status', '학습 루프 실행 중...', 'loading'); show($('effect-status'));
-  try {
-    const params = new URLSearchParams({ preset: $('effect-preset').value, max_iterations: $('effect-iters').value });
-    const resp = await apiFetch(`/api/effect-loop/${sessionId}?${params}`, { method:'POST' }); const data = await resp.json();
-    const a=data.best_accuracy||{}, bp=data.best_params||{};
-    $('effect-results').innerHTML = `
-      <div class="grid-4">
-        <div class="metric"><div class="value">${((a.note_accuracy||0)*100).toFixed(1)}%</div><div class="label">음정</div></div>
-        <div class="metric"><div class="value">${((a.pitch_accuracy||0)*100).toFixed(1)}%</div><div class="label">피치</div></div>
-        <div class="metric"><div class="value">${((a.timing_accuracy||0)*100).toFixed(1)}%</div><div class="label">타이밍</div></div>
-        <div class="metric"><div class="value">${((a.overall||0)*100).toFixed(1)}%</div><div class="label">종합</div></div>
-      </div>
-      <div class="status status-info" style="margin-top:8px">최적값: 신뢰도=${bp.confidence_threshold?.toFixed(2)} | 최소길이=${bp.min_note_duration_ms}ms | 서스테인=${bp.sustain_ms}ms</div>`;
-    show($('effect-results'));
-    showStatus('effect-status', `학습 완료! ${data.iterations}회 반복`, 'success');
-  } catch(e) { showStatus('effect-status', e.message, 'error'); }
-  finally { btn.disabled = false; }
+}
+if (e.code === 'Escape'){prState.selectedNote = null;hideNotePopup();drawPR();}
+if (e.code === 'KeyS'){document.querySelector('.pr-mode[data-mode="select"]').click();}
+if (e.code === 'KeyD'){document.querySelector('.pr-mode[data-mode="draw"]').click();}
+if (e.code === 'KeyE'){document.querySelector('.pr-mode[data-mode="erase"]').click();}
+});
+window.addEventListener('resize',() =>{if (currentEvents.length) drawPR();});
+$('btn-download-midi').onclick = () =>{
+if (!sessionId) return;
+window.open(`/api/midi/${sessionId}`,'_blank');
 };
-
-// ─── Per-Note Optimizer ─────────────────────────────
-$('btn-pno').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-pno'); btn.disabled = true;
-  showStatus('pno-status', '노트별 최적화 중...', 'loading'); show($('pno-status'));
-  try {
-    const params = new URLSearchParams({ quick_mode: $('pno-quick').checked, parallel: $('pno-parallel').checked });
-    const resp = await apiFetch(`/api/per-note-optimize/${sessionId}?${params}`, { method:'POST' }); const data = await resp.json();
-    const r=data.report||{};
-    $('pno-results').innerHTML = `
-      <div class="grid-3">
-        <div class="metric"><div class="value">${((r.avg_similarity||0)*100).toFixed(1)}%</div><div class="label">평균 유사도</div></div>
-        <div class="metric"><div class="value">${((r.min_similarity||0)*100).toFixed(1)}%</div><div class="label">최소</div></div>
-        <div class="metric"><div class="value">${((r.max_similarity||0)*100).toFixed(1)}%</div><div class="label">최대</div></div>
-      </div>
-      <div class="status status-info" style="margin-top:8px">평균 ADSR: A=${r.avg_attack_ms}ms D=${r.avg_decay_ms}ms S=${r.avg_sustain_level} R=${r.avg_release_ms}ms</div>`;
-    show($('pno-results'));
-    if (data.wav_base64) {
-      const bytes=atob(data.wav_base64);const arr=new Uint8Array(bytes.length);
-      for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);
-      $('audio-pno').src=URL.createObjectURL(new Blob([arr],{type:'audio/wav'})); show($('audio-pno'));
-    }
-    showStatus('pno-status', `${r.total_notes||0}개 노트 최적화 완료!`, 'success');
-  } catch(e) { showStatus('pno-status', e.message, 'error'); }
-  finally { btn.disabled = false; }
+$('btn-play-orig').onclick = async () =>{
+const el = $('audio-orig');
+if (!el.classList.contains('hidden')){hide(el);return;}
+el.src = `/api/original-wav/${sessionId}`;show(el);
 };
-
-// ═══════════════════════════════════════════════════════
-// ═══ GUITAR FRET FILTER ═════════════════════════════
-// ═══════════════════════════════════════════════════════
-
-$('ff-speed').oninput = function() { $('v-ff-speed').textContent = this.value; };
-$('ff-protect').oninput = function() { $('v-ff-protect').textContent = this.value; };
-
-$('btn-fret-filter').onclick = async () => {
-  if (!sessionId) return;
-  const btn = $('btn-fret-filter'); btn.disabled = true;
-  showStatus('ff-status', '운지 필터 적용 중...', 'loading'); show($('ff-status'));
-  try {
-    const params = new URLSearchParams({
-      max_fret_speed: $('ff-speed').value,
-      protect_long_notes_ms: $('ff-protect').value,
-    });
-    const resp = await apiFetch(`/api/fret-filter/${sessionId}?${params}`, { method:'POST' });
-    const data = await resp.json();
-    const rpt = data.report || {};
-
-    // Update piano roll
-    currentEvents = (data.events || []).map((e,i) => ({...e, _idx:i}));
-    $('note-count').textContent = currentEvents.length;
-    prState.selectedNote = null;
-    drawPR();
-
-    // Show metrics
-    $('ff-metrics').innerHTML = `
-      <div class="metric"><div class="value">${rpt.original_count||0}</div><div class="label">원본</div></div>
-      <div class="metric"><div class="value" style="color:var(--green)">${rpt.filtered_count||0}</div><div class="label">유지</div></div>
-      <div class="metric"><div class="value" style="color:var(--red)">${rpt.removed_count||0}</div><div class="label">제거</div></div>`;
-
-    // Show removed details
-    const removed = rpt.removed_notes || [];
-    if (removed.length > 0) {
-      $('ff-removed-list').innerHTML = removed.map(r =>
-        `<div style="padding:2px 0;border-bottom:1px solid var(--border)">` +
-        `노트 ${r.note} (${noteName(r.note)}) @ ${r.start} - ${r.reason}` +
-        (r.required_speed ? ` (${r.required_speed} 프렛/초, 허용: ${r.max_allowed})` : '') +
-        `</div>`
-      ).join('');
-    } else {
-      $('ff-removed-list').innerHTML = '<div style="color:var(--green)">노이즈 없음</div>';
-    }
-    show($('ff-results'));
-
-    showStatus('ff-status', `운지 필터: ${rpt.removed_count||0}개 제거, ${rpt.filtered_count||0}개 유지`, 'success');
-
-    // Auto-regenerate tab if visible
-    if (tabData.length > 0) {
-      tabData = generateTabData(currentEvents);
-      drawTab(tabData);
-      $('tab-note-count').textContent = tabData.length;
-    }
-  } catch(e) { showStatus('ff-status', e.message, 'error'); }
-  finally { btn.disabled = false; }
+$('btn-play-midi').onclick = async () =>{
+const el = $('audio-midi');
+if (!el.classList.contains('hidden')){hide(el);return;}
+el.src = `/api/midi-wav/${sessionId}`;show(el);
 };
-
-// ═══════════════════════════════════════════════════════
-// ═══ GUITAR TABLATURE ═══════════════════════════════
-// ═══════════════════════════════════════════════════════
-
+$('btn-crossfade').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-crossfade');btn.disabled = true;btn.textContent = '믹싱 중...';
+try{
+const cf = $('crossfade-slider').value;
+const resp = await apiFetch(`/api/crossfade/${sessionId}?crossfade=${cf}`,{method:'POST'});
+const blob = await resp.blob();
+$('audio-mix').src = URL.createObjectURL(blob);show($('audio-mix'));
+}catch (e){alert('크로스페이드 실패:' + e.message);}
+finally{btn.disabled = false;btn.textContent = '믹스 생성';}
+};
+const presetInfo ={nylon:'A:5ms D:80ms S:0.6 R:200ms | Triangle',steel:'A:3ms D:60ms S:0.5 R:150ms | Sawtooth',electric_clean:'A:5ms D:40ms S:0.7 R:100ms | Sawtooth',electric_overdrive:'A:2ms D:30ms S:0.8 R:300ms | Square',muted:'A:2ms D:20ms S:0.2 R:30ms | Sawtooth'};
+$('adsr-preset').onchange = function (){$('adsr-preset-info').textContent = presetInfo[this.value] || '';};
+$('adsr-preset').dispatchEvent(new Event('change'));
+$('btn-adsr-synth').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-adsr-synth');btn.disabled = true;
+showStatus('adsr-status','ADSR 합성 중...','loading');show($('adsr-status'));
+try{
+const params = new URLSearchParams({preset:$('adsr-preset').value,envelope_match:$('adsr-envelope-match').checked});
+const resp = await apiFetch(`/api/adsr-synth/${sessionId}?${params}`,{method:'POST'});
+const data = await resp.json();
+const bytes = atob(data.wav_base64);const arr = new Uint8Array(bytes.length);
+for (let i = 0;i < bytes.length;i++) arr[i] = bytes.charCodeAt(i);
+$('audio-adsr').src = URL.createObjectURL(new Blob([arr],{type:'audio/wav'}));show($('audio-adsr'));
+let msg = 'ADSR 합성 완료!';
+if (data.envelope_params){const ep = data.envelope_params;msg += ` (A:${ep.attack_ms}ms D:${ep.decay_ms}ms S:${ep.sustain_level}R:${ep.release_ms}ms)`;}
+showStatus('adsr-status',msg,'success');
+}catch (e){showStatus('adsr-status',e.message,'error');}
+finally{btn.disabled = false;}
+};
+$('btn-reverse').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-reverse');btn.disabled = true;
+showStatus('reverse-status','역분석 실행 중...','loading');show($('reverse-status'));
+try{
+const resp = await apiFetch(`/api/reverse-analysis/${sessionId}`,{method:'POST'});const data = await resp.json();
+$('reverse-metrics').innerHTML = `
+<div class="metric"><div class="value">${(data.note_accuracy * 100).toFixed(1)}%</div><div class="label">음정</div></div><div class="metric"><div class="value">${(data.pitch_accuracy * 100).toFixed(1)}%</div><div class="label">피치</div></div><div class="metric"><div class="value">${(data.timing_accuracy * 100).toFixed(1)}%</div><div class="label">타이밍</div></div>`;
+show($('reverse-results'));
+showStatus('reverse-status',`원본:${data.original_notes}→ 역변환:${data.reversed_notes}개 노트`,'success');
+}catch (e){showStatus('reverse-status',e.message,'error');}
+finally{btn.disabled = false;}
+};
+$('btn-automatch').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-automatch');btn.disabled = true;
+showStatus('automatch-status','자동 매칭 중...','loading');show($('automatch-status'));
+try{
+const resp = await apiFetch(`/api/auto-match/${sessionId}`,{method:'POST'});const data = await resp.json();
+$('automatch-results').innerHTML = `
+<div class="grid-4"><div class="metric"><div class="value">${data.score ? (data.score * 100).toFixed(1) + '%':'N/A'}</div><div class="label">점수</div></div><div class="metric"><div class="value">${data.confidence_threshold?.toFixed(2) || 'N/A'}</div><div class="label">신뢰도</div></div><div class="metric"><div class="value">${data.min_note_duration_ms || 'N/A'}</div><div class="label">최소 길이</div></div><div class="metric"><div class="value">${data.sustain_ms || 'N/A'}</div><div class="label">서스테인</div></div></div><button class="btn btn-green btn-full btn-sm" style="margin-top:12px" onclick="applyAutoMatch(${data.confidence_threshold},${data.min_note_duration_ms},${data.sustain_ms})">파라미터 적용</button>`;
+show($('automatch-results'));
+showStatus('automatch-status','자동 매칭 완료!','success');
+}catch (e){showStatus('automatch-status',e.message,'error');}
+finally{btn.disabled = false;}
+};
+function applyAutoMatch(c,d,s){
+$('p-confidence').value = c;document.querySelector('#v-confidence').textContent = c.toFixed(2);
+$('p-mindur').value = d;document.querySelector('#v-mindur').textContent = d;
+$('p-sustain').value = s;document.querySelector('#v-sustain').textContent = s;
+$('btn-refilter').click();
+}
+(async () =>{
+try{
+const r = await apiFetch('/api/presets');const d = await r.json();const sel = $('effect-preset');
+(d.effect_presets || ['clean']).forEach(p =>{const o = document.createElement('option');o.value = p;o.textContent = p;sel.appendChild(o);});
+}catch (e){console.warn(e);}
+})();
+$('btn-effect-loop').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-effect-loop');btn.disabled = true;
+showStatus('effect-status','학습 루프 실행 중...','loading');show($('effect-status'));
+try{
+const params = new URLSearchParams({preset:$('effect-preset').value,max_iterations:$('effect-iters').value});
+const resp = await apiFetch(`/api/effect-loop/${sessionId}?${params}`,{method:'POST'});const data = await resp.json();
+const a = data.best_accuracy ||{},bp = data.best_params ||{};
+$('effect-results').innerHTML = `
+<div class="grid-4"><div class="metric"><div class="value">${((a.note_accuracy || 0) * 100).toFixed(1)}%</div><div class="label">음정</div></div><div class="metric"><div class="value">${((a.pitch_accuracy || 0) * 100).toFixed(1)}%</div><div class="label">피치</div></div><div class="metric"><div class="value">${((a.timing_accuracy || 0) * 100).toFixed(1)}%</div><div class="label">타이밍</div></div><div class="metric"><div class="value">${((a.overall || 0) * 100).toFixed(1)}%</div><div class="label">종합</div></div></div><div class="status status-info" style="margin-top:8px">최적값:신뢰도=${bp.confidence_threshold?.toFixed(2)}| 최소길이=${bp.min_note_duration_ms}ms | 서스테인=${bp.sustain_ms}ms</div>`;
+show($('effect-results'));
+showStatus('effect-status',`학습 완료! ${data.iterations}회 반복`,'success');
+}catch (e){showStatus('effect-status',e.message,'error');}
+finally{btn.disabled = false;}
+};
+$('btn-pno').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-pno');btn.disabled = true;
+showStatus('pno-status','노트별 최적화 중...','loading');show($('pno-status'));
+try{
+const params = new URLSearchParams({quick_mode:$('pno-quick').checked,parallel:$('pno-parallel').checked});
+const resp = await apiFetch(`/api/per-note-optimize/${sessionId}?${params}`,{method:'POST'});const data = await resp.json();
+const r = data.report ||{};
+$('pno-results').innerHTML = `
+<div class="grid-3"><div class="metric"><div class="value">${((r.avg_similarity || 0) * 100).toFixed(1)}%</div><div class="label">평균 유사도</div></div><div class="metric"><div class="value">${((r.min_similarity || 0) * 100).toFixed(1)}%</div><div class="label">최소</div></div><div class="metric"><div class="value">${((r.max_similarity || 0) * 100).toFixed(1)}%</div><div class="label">최대</div></div></div><div class="status status-info" style="margin-top:8px">평균 ADSR:A=${r.avg_attack_ms}ms D=${r.avg_decay_ms}ms S=${r.avg_sustain_level}R=${r.avg_release_ms}ms</div>`;
+show($('pno-results'));
+if (data.wav_base64){
+const bytes = atob(data.wav_base64);const arr = new Uint8Array(bytes.length);
+for (let i = 0;i < bytes.length;i++)arr[i] = bytes.charCodeAt(i);
+$('audio-pno').src = URL.createObjectURL(new Blob([arr],{type:'audio/wav'}));show($('audio-pno'));
+}
+showStatus('pno-status',`${r.total_notes || 0}개 노트 최적화 완료!`,'success');
+}catch (e){showStatus('pno-status',e.message,'error');}
+finally{btn.disabled = false;}
+};
+$('ff-speed').oninput = function (){$('v-ff-speed').textContent = this.value;};
+$('ff-protect').oninput = function (){$('v-ff-protect').textContent = this.value;};
+$('btn-fret-filter').onclick = async () =>{
+if (!sessionId) return;
+const btn = $('btn-fret-filter');btn.disabled = true;
+showStatus('ff-status','운지 필터 적용 중...','loading');show($('ff-status'));
+try{
+const params = new URLSearchParams({
+max_fret_speed:$('ff-speed').value,
+protect_long_notes_ms:$('ff-protect').value,
+});
+const resp = await apiFetch(`/api/fret-filter/${sessionId}?${params}`,{method:'POST'});
+const data = await resp.json();
+const rpt = data.report ||{};
+currentEvents = (data.events || []).map((e,i) => ({...e,_idx:i}));
+$('note-count').textContent = currentEvents.length;
+prState.selectedNote = null;
+drawPR();
+$('ff-metrics').innerHTML = `
+<div class="metric"><div class="value">${rpt.original_count || 0}</div><div class="label">원본</div></div><div class="metric"><div class="value" style="color:var(--green)">${rpt.filtered_count || 0}</div><div class="label">유지</div></div><div class="metric"><div class="value" style="color:var(--red)">${rpt.removed_count || 0}</div><div class="label">제거</div></div>`;
+const removed = rpt.removed_notes || [];
+if (removed.length > 0){
+$('ff-removed-list').innerHTML = removed.map(r =>
+`<div style="padding:2px 0;border-bottom:1px solid var(--border)">` +
+`노트 ${r.note}(${noteName(r.note)}) @ ${r.start}- ${r.reason}` +
+(r.required_speed ? ` (${r.required_speed}프렛/초,허용:${r.max_allowed})`:'') +
+`</div>`
+).join('');
+}else{
+$('ff-removed-list').innerHTML = '<div style="color:var(--green)">노이즈 없음</div>';
+}
+show($('ff-results'));
+showStatus('ff-status',`운지 필터:${rpt.removed_count || 0}개 제거,${rpt.filtered_count || 0}개 유지`,'success');
+if (tabData.length > 0){
+tabData = generateTabData(currentEvents);
+drawTab(tabData);
+$('tab-note-count').textContent = tabData.length;
+}
+}catch (e){showStatus('ff-status',e.message,'error');}
+finally{btn.disabled = false;}
+};
 let tabData = [];
-
 const TAB_LINE_SPACING = 22;
 const TAB_PADDING_TOP = 28;
 const TAB_PADDING_BOTTOM = 10;
 const TAB_STRING_LABELS = ['e','B','G','D','A','E'];
-const STRING_PITCHES = [64, 59, 55, 50, 45, 40];
-
-function generateTabData(events) {
-  let fretCenter = 5;
-  const data = [];
-  for (const evt of events) {
-    const pitch = evt.note;
-    const candidates = [];
-    for (let sIdx = 0; sIdx < STRING_PITCHES.length; sIdx++) {
-      const fret = pitch - STRING_PITCHES[sIdx];
-      if (fret >= 0 && fret <= 24) candidates.push({string: sIdx, fret});
-    }
-    if (!candidates.length) continue;
-
-    const best = candidates.reduce((a, b) => {
-      const sa = Math.abs(a.fret - fretCenter) * 1.5 + a.string * 0.2;
-      const sb = Math.abs(b.fret - fretCenter) * 1.5 + b.string * 0.2;
-      return sa < sb ? a : b;
-    });
-    fretCenter = fretCenter * 0.7 + best.fret * 0.3;
-
-    data.push({
-      string: best.string,
-      fret: best.fret,
-      start: evt.start,
-      end: evt.end,
-      note: evt.note,
-      technique: evt.technique || 'normal',
-    });
-  }
-  return data;
+const STRING_PITCHES = [64,59,55,50,45,40];
+function generateTabData(events){
+let fretCenter = 5;
+const data = [];
+for (const evt of events){
+const pitch = evt.note;
+const candidates = [];
+for (let sIdx = 0;sIdx < STRING_PITCHES.length;sIdx++){
+const fret = pitch - STRING_PITCHES[sIdx];
+if (fret >= 0 && fret <= 24) candidates.push({string:sIdx,fret});
 }
-
-function drawTab(tData) {
-  const canvas = $('tab-canvas');
-  const ctx = canvas.getContext('2d');
-  const zoom = parseFloat($('tab-zoom').value);
-
-  const canvasH = TAB_PADDING_TOP + (5 * TAB_LINE_SPACING) + TAB_PADDING_BOTTOM;
-  const canvasW = prCanvasW() * zoom;
-
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = canvasW * dpr;
-  canvas.height = canvasH * dpr;
-  canvas.style.width = canvasW + 'px';
-  canvas.style.height = canvasH + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  // Background
-  ctx.fillStyle = '#12121f';
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  // 6 string lines
-  ctx.lineWidth = 1;
-  for (let s = 0; s < 6; s++) {
-    const y = TAB_PADDING_TOP + s * TAB_LINE_SPACING;
-    ctx.strokeStyle = (s === 0 || s === 5) ? '#4a4a6e' : '#3a3a5e';
-    ctx.beginPath();
-    ctx.moveTo(40, y);
-    ctx.lineTo(canvasW, y);
-    ctx.stroke();
-
-    // String label
-    ctx.fillStyle = '#888';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(TAB_STRING_LABELS[s], 35, y + 4);
-  }
-
-  // Time grid (match piano roll)
-  const gridMs = prState.zoomX >= 2 ? 500 : (prState.zoomX >= 1 ? 1000 : 2000);
-  ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 0.5;
-  for (let ms = 0; ms <= prState.maxEndMs; ms += gridMs) {
-    const x = msToX(ms) * zoom;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke();
-  }
-
-  // Fret numbers
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 11px monospace';
-
-  const techColors = {
-    bend:'#00b894', slide:'#a29bfe',
-    hammer_on:'#fdcb6e', pull_off:'#fd79a8',
-    vibrato:'#74b9ff', normal:'#e0e0e8'
-  };
-
-  for (let i = 0; i < tData.length; i++) {
-    const t = tData[i];
-    const x = msToX(t.start) * zoom;
-    const y = TAB_PADDING_TOP + t.string * TAB_LINE_SPACING;
-
-    const numStr = String(t.fret);
-    const tw = ctx.measureText(numStr).width + 6;
-
-    // Background behind number
-    ctx.fillStyle = '#12121f';
-    ctx.fillRect(x - tw/2, y - 8, tw, 16);
-
-    // Colored number
-    ctx.fillStyle = techColors[t.technique] || techColors.normal;
-    ctx.fillText(numStr, x, y + 4);
-
-    // Technique symbols
-    if (t.technique === 'bend') {
-      ctx.strokeStyle = '#00b894';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(x + tw/2 + 2, y);
-      ctx.quadraticCurveTo(x + tw/2 + 8, y - 12, x + tw/2 + 14, y);
-      ctx.stroke();
-    }
-    else if (t.technique === 'slide' && i + 1 < tData.length) {
-      const nxt = tData[i + 1];
-      const nx = msToX(nxt.start) * zoom;
-      const ny = TAB_PADDING_TOP + nxt.string * TAB_LINE_SPACING;
-      ctx.strokeStyle = '#a29bfe';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x + tw/2 + 2, y);
-      ctx.lineTo(nx - ctx.measureText(String(nxt.fret)).width/2 - 4, ny);
-      ctx.stroke();
-    }
-    else if (t.technique === 'hammer_on' || t.technique === 'pull_off') {
-      const label = t.technique === 'hammer_on' ? 'h' : 'p';
-      ctx.fillStyle = techColors[t.technique];
-      ctx.font = '9px monospace';
-      ctx.fillText(label, x, y - 10);
-      ctx.font = 'bold 11px monospace';
-    }
-    else if (t.technique === 'vibrato') {
-      ctx.strokeStyle = '#74b9ff';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let wx = 0; wx < 16; wx += 4) {
-        const wy = y - 10 + Math.sin(wx * 1.2) * 3;
-        if (wx === 0) ctx.moveTo(x - 8 + wx, wy);
-        else ctx.lineTo(x - 8 + wx, wy);
-      }
-      ctx.stroke();
-    }
-  }
-
-  // Playhead
-  if (prState.playing || prState.playOffset > 0) {
-    const phX = msToX(getCurrentPlayMs()) * zoom * dpr;
-    ctx.save();
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.strokeStyle = '#ff4757';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(phX, 0);
-    ctx.lineTo(phX, canvas.height);
-    ctx.stroke();
-    ctx.restore();
-  }
+if (!candidates.length) continue;
+const best = candidates.reduce((a,b) =>{
+const sa = Math.abs(a.fret - fretCenter) * 1.5 + a.string * 0.2;
+const sb = Math.abs(b.fret - fretCenter) * 1.5 + b.string * 0.2;
+return sa < sb ? a:b;
+});
+fretCenter = fretCenter * 0.7 + best.fret * 0.3;
+data.push({
+string:best.string,
+fret:best.fret,
+start:evt.start,
+end:evt.end,
+note:evt.note,
+technique:evt.technique || 'normal',
+});
 }
-
-$('btn-gen-tab').onclick = () => {
-  if (!currentEvents.length) return;
-  tabData = generateTabData(currentEvents);
-  drawTab(tabData);
-  $('tab-note-count').textContent = tabData.length;
+return data;
+}
+function drawTab(tData){
+const canvas = $('tab-canvas');
+const ctx = canvas.getContext('2d');
+const zoom = parseFloat($('tab-zoom').value);
+const canvasH = TAB_PADDING_TOP + (5 * TAB_LINE_SPACING) + TAB_PADDING_BOTTOM;
+const canvasW = prCanvasW() * zoom;
+const dpr = window.devicePixelRatio || 1;
+canvas.width = canvasW * dpr;
+canvas.height = canvasH * dpr;
+canvas.style.width = canvasW + 'px';
+canvas.style.height = canvasH + 'px';
+ctx.setTransform(dpr,0,0,dpr,0,0);
+ctx.fillStyle = '#12121f';
+ctx.fillRect(0,0,canvasW,canvasH);
+ctx.lineWidth = 1;
+for (let s = 0;s < 6;s++){
+const y = TAB_PADDING_TOP + s * TAB_LINE_SPACING;
+ctx.strokeStyle = (s === 0 || s === 5) ? '#4a4a6e':'#3a3a5e';
+ctx.beginPath();
+ctx.moveTo(40,y);
+ctx.lineTo(canvasW,y);
+ctx.stroke();
+ctx.fillStyle = '#888';
+ctx.font = '12px monospace';
+ctx.textAlign = 'right';
+ctx.fillText(TAB_STRING_LABELS[s],35,y + 4);
+}
+const gridMs = prState.zoomX >= 2 ? 500:(prState.zoomX >= 1 ? 1000:2000);
+ctx.strokeStyle = '#1a1a2e';ctx.lineWidth = 0.5;
+for (let ms = 0;ms <= prState.maxEndMs;ms += gridMs){
+const x = msToX(ms) * zoom;
+ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvasH);ctx.stroke();
+}
+ctx.textAlign = 'center';
+ctx.font = 'bold 11px monospace';
+const techColors ={
+bend:'#00b894',slide:'#a29bfe',
+hammer_on:'#fdcb6e',pull_off:'#fd79a8',
+vibrato:'#74b9ff',normal:'#e0e0e8'
 };
-
-$('tab-zoom').oninput = function() {
-  if (tabData.length) drawTab(tabData);
+for (let i = 0;i < tData.length;i++){
+const t = tData[i];
+const x = msToX(t.start) * zoom;
+const y = TAB_PADDING_TOP + t.string * TAB_LINE_SPACING;
+const numStr = String(t.fret);
+const tw = ctx.measureText(numStr).width + 6;
+ctx.fillStyle = '#12121f';
+ctx.fillRect(x - tw / 2,y - 8,tw,16);
+ctx.fillStyle = techColors[t.technique] || techColors.normal;
+ctx.fillText(numStr,x,y + 4);
+if (t.technique === 'bend'){
+ctx.strokeStyle = '#00b894';
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.moveTo(x + tw / 2 + 2,y);
+ctx.quadraticCurveTo(x + tw / 2 + 8,y - 12,x + tw / 2 + 14,y);
+ctx.stroke();
+}
+else if (t.technique === 'slide' && i + 1 < tData.length){
+const nxt = tData[i + 1];
+const nx = msToX(nxt.start) * zoom;
+const ny = TAB_PADDING_TOP + nxt.string * TAB_LINE_SPACING;
+ctx.strokeStyle = '#a29bfe';
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.moveTo(x + tw / 2 + 2,y);
+ctx.lineTo(nx - ctx.measureText(String(nxt.fret)).width / 2 - 4,ny);
+ctx.stroke();
+}
+else if (t.technique === 'hammer_on' || t.technique === 'pull_off'){
+const label = t.technique === 'hammer_on' ? 'h':'p';
+ctx.fillStyle = techColors[t.technique];
+ctx.font = '9px monospace';
+ctx.fillText(label,x,y - 10);
+ctx.font = 'bold 11px monospace';
+}
+else if (t.technique === 'vibrato'){
+ctx.strokeStyle = '#74b9ff';
+ctx.lineWidth = 1;
+ctx.beginPath();
+for (let wx = 0;wx < 16;wx += 4){
+const wy = y - 10 + Math.sin(wx * 1.2) * 3;
+if (wx === 0) ctx.moveTo(x - 8 + wx,wy);
+else ctx.lineTo(x - 8 + wx,wy);
+}
+ctx.stroke();
+}
+}
+if (prState.playing || prState.playOffset > 0){
+const phX = msToX(getCurrentPlayMs()) * zoom * dpr;
+ctx.save();
+ctx.setTransform(1,0,0,1,0,0);
+ctx.strokeStyle = '#ff4757';
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(phX,0);
+ctx.lineTo(phX,canvas.height);
+ctx.stroke();
+ctx.restore();
+}
+}
+$('btn-gen-tab').onclick = () =>{
+if (!currentEvents.length) return;
+tabData = generateTabData(currentEvents);
+drawTab(tabData);
+$('tab-note-count').textContent = tabData.length;
 };
-
-// Scroll sync: piano roll ↔ tab
-$('pr-scroll').addEventListener('scroll', function() {
-  const tabScroll = $('tab-scroll');
-  const zoom = parseFloat($('tab-zoom').value);
-  tabScroll.scrollLeft = this.scrollLeft * zoom;
+$('tab-zoom').oninput = function (){
+if (tabData.length) drawTab(tabData);
+};
+$('pr-scroll').addEventListener('scroll',function (){
+const tabScroll = $('tab-scroll');
+const zoom = parseFloat($('tab-zoom').value);
+tabScroll.scrollLeft = this.scrollLeft * zoom;
 });
-$('tab-scroll').addEventListener('scroll', function() {
-  const prScrollEl = $('pr-scroll');
-  const zoom = parseFloat($('tab-zoom').value);
-  prScrollEl.scrollLeft = this.scrollLeft / zoom;
+$('tab-scroll').addEventListener('scroll',function (){
+const prScrollEl = $('pr-scroll');
+const zoom = parseFloat($('tab-zoom').value);
+prScrollEl.scrollLeft = this.scrollLeft / zoom;
 });
-</script>
-</body>
-</html>
+</script></body></html>
